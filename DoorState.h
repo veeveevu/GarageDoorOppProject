@@ -1,8 +1,9 @@
-//
-// Created by vuhav on 04/03/2026.
-//
-
 #ifndef GARAGE_DOOR_DOORSTATE_H
 #define GARAGE_DOOR_DOORSTATE_H
+
+//state for state machine
+enum DoorState {
+    NOT_CALIBRATED, CALIBRATED, DOOR_OPENED, DOOR_CLOSED, DOOR_OPENING, DOOR_CLOSING, ERROR
+};
 
 #endif //GARAGE_DOOR_DOORSTATE_H
