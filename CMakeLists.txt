@@ -47,6 +47,23 @@ add_executable(${PROJECT_NAME}
         spi/PicoSPIDevice.h
         i2c/i2c_device.h
         spi/spi_device.h
+        GarageDoorController.cpp
+        GarageDoorController.h
+        StepperMotor.cpp
+        StepperMotor.h
+        RotaryEncoder.cpp
+        RotaryEncoder.h
+        LimitSwitch.cpp
+        LimitSwitch.h
+        Button.cpp
+        Button.h
+        Led.cpp
+        Led.h
+        MQTT.cpp
+        MQTT.h
+        EEPROM.cpp
+        EEPROM.h
+        DoorState.h
 )
 
 # Create map/bin/hex/uf2 files
