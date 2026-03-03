@@ -10,6 +10,8 @@
 #include "Countdown.h"
 #include "MQTTClient.h"
 
+#include <iostream>
+
 #include "PicoI2CDevice.h"
 #include "PicoSPIBus.h"
 #include "PicoSPIDevice.h"
@@ -154,7 +156,10 @@ default:
     cyw43_arch_poll(); // obsolete? - see below
     client.yield(100); // socket that client uses calls cyw43_arch_poll()
 #endif
+    /*
     while (true) {
         tight_loop_contents();
     }
+    */
+    std::cout << "Hello";
 }
