@@ -8,9 +8,9 @@ set(PICO_BOARD pico_w)
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 # Set name of project (as PROJECT_NAME) and C/C   standards
-project(pico-modbus C CXX ASM)
+project(garage-door C CXX ASM)
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # Creates a pico-sdk subdirectory in our project for the libraries
 pico_sdk_init()
@@ -45,6 +45,8 @@ add_executable(${PROJECT_NAME}
         spi/PicoSPIBus.h
         spi/PicoSPIDevice.cpp
         spi/PicoSPIDevice.h
+        i2c/i2c_device.h
+        spi/spi_device.h
 )
 
 # Create map/bin/hex/uf2 files
