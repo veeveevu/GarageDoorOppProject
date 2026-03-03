@@ -27,8 +27,6 @@ file(GLOB MQTT_SOURCES "paho.mqtt.embedded-c/MQTTPacket/src/*.c")
 # Tell CMake where to find the executable source file
 add_executable(${PROJECT_NAME}
         main.cpp
-        modbus/nanomodbus.h
-        modbus/nanomodbus.c
         uart/PicoUart.cpp
         uart/PicoUart.h
         uart/RingBuffer.cpp
@@ -38,37 +36,15 @@ add_executable(${PROJECT_NAME}
         mqtt/IPStack.cpp
         mqtt/IPStack.h
         mqtt/lwipopts.h
-        modbus/ModbusRegister.cpp
-        modbus/ModbusRegister.h
-        modbus/ModbusClient.cpp
-        modbus/ModbusClient.h
         ${MQTT_SOURCES}
-        display/framebuf.cpp
-        display/framebuf.h
-        display/mono_vlsb.cpp
-        display/mono_vlsb.h
-        display/ssd1306.cpp
-        display/ssd1306.h
-        display/mono_horiz.cpp
-        display/mono_horiz.h
-        display/epd154.cpp
-        display/epd154.h
-        display/fonts/gfxfont.h
-        display/fonts/FreeMono12pt7b.h
-        display/st7789nobuf.cpp
-        display/st7789nobuf.h
-        display/i2c_device.h
         i2c/PicoI2CDevice.cpp
         i2c/PicoI2CDevice.h
         i2c/PicoI2CBus.cpp
         i2c/PicoI2CBus.h
-        display/spi_device.h
         spi/PicoSPIBus.cpp
         spi/PicoSPIBus.h
         spi/PicoSPIDevice.cpp
         spi/PicoSPIDevice.h
-        display/rgb_palette.cpp
-        display/rgb_palette.h
 )
 
 # Create map/bin/hex/uf2 files
@@ -80,13 +56,10 @@ pico_add_extra_outputs(${PROJECT_NAME})
 #        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.uf2 d: )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-        modbus
         mqtt
         uart
         i2c
         spi
-        display
-        display/fonts
         paho.mqtt.embedded-c/MQTTPacket/src
         paho.mqtt.embedded-c/MQTTClient/src
 )
