@@ -154,5 +154,7 @@ default:
     cyw43_arch_poll(); // obsolete? - see below
     client.yield(100); // socket that client uses calls cyw43_arch_poll()
 #endif
-    tight_loop_contents();
+    while (true) {
+        tight_loop_contents();
+    }
 }
