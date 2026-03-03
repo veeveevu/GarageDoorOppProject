@@ -1,3 +1,30 @@
-cmake-build-debug/
+# --- Build outputs (CMake) ---
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.ninja
+*.ninja_deps
+*.ninja_log
+
+# --- Pico / firmware artifacts ---
+*.elf
+*.bin
+*.hex
+*.uf2
+*.map
+*.dis
+*.pio.h
+
+# --- OS / editor junk ---
 .DS_Store
-.idea
+Thumbs.db
+*.swp
+*.swo
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.code-workspace
