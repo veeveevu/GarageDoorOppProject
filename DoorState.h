@@ -2,11 +2,11 @@
 #define GARAGE_DOOR_DOORSTATE_H
 
 //state for state machine
-enum DoorState {
+enum class DoorState {
     NOT_CALIBRATED, CALIBRATED, DOOR_OPENED, DOOR_CLOSED, DOOR_OPENING, DOOR_CLOSING, ERROR
 };
 
-enum Error {
+enum class Error {
     NORMAL, STUCK
 };
 
