@@ -59,8 +59,8 @@ add_executable(${PROJECT_NAME}
         Button.h
         Led.cpp
         Led.h
-        MQTT.cpp
-        MQTT.h
+        MQTTCom.cpp
+        MQTTCom.h
         EEPROM.cpp
         EEPROM.h
         DoorState.h
