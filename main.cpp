@@ -12,6 +12,7 @@
 
 #include <iostream>
 
+#include "LimitSwitch.h"
 #include "PicoI2CDevice.h"
 #include "PicoSPIBus.h"
 #include "PicoSPIDevice.h"
@@ -69,6 +70,7 @@ int main() {
 
     StepperMotor abc;
     RotaryEncoder xyz;
+    LimitSwitch efd;
     abc.run_steps(4, StepperMotor::MotorDirection::Backward);
 
 }
