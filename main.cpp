@@ -68,9 +68,5 @@ int main() {
     }
     */
 
-    StepperMotor abc;
-    RotaryEncoder xyz;
-    LimitSwitch efd;
-    abc.run_steps(4, StepperMotor::MotorDirection::Backward);
 
 }
