@@ -7,12 +7,15 @@
 
 class RotaryEncoder {
 public:
-    RotaryEncoder();
-    static void encoder_handler(unsigned gpio, uint32_t event_mask);
-    static queue_t rotary_events;
+    RotaryEncoder(uint Rot_A_pin, uint Rot_B_pin);
+
 private:
-    static constexpr int Rot_A = 27;
-    static constexpr int Rot_B = 28;
+    queue_t rotary_events{};
+    uint Rot_A;
+    uint Rot_B;
+
+    static void encoder_handler(uint gpio, uint32_t event_mask);
+    static RotaryEncoder* instance;
 };
 
 #endif //GARAGE_DOOR_ROTARYENCODER_H

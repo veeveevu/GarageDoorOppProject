@@ -1,7 +1,9 @@
 #include "StepperMotor.h"
 
-StepperMotor::StepperMotor() {
-    for (int motor_pin : motor_pins) {
+StepperMotor::StepperMotor(uint in1_pin, uint in2_pin, uint in3_pin, uint in4_pin)
+    :motor_pins{in1_pin, in2_pin, in3_pin, in4_pin}{
+
+    for (uint motor_pin : motor_pins) {
         gpio_init(motor_pin);
         gpio_set_dir(motor_pin, GPIO_OUT);
     }
