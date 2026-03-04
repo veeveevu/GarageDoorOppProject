@@ -1,7 +1,3 @@
-//
-// Created by vuhav on 04/03/2026.
-//
-
 #ifndef GARAGE_DOOR_ROTARYENCODER_H
 #define GARAGE_DOOR_ROTARYENCODER_H
 
