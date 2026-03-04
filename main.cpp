@@ -15,6 +15,7 @@
 #include "PicoI2CDevice.h"
 #include "PicoSPIBus.h"
 #include "PicoSPIDevice.h"
+#include "RotaryEncoder.h"
 #include "StepperMotor.h"
 
 // We are using pins 0 and 1, but see the GPIO function select table in the
@@ -67,5 +68,7 @@ int main() {
     */
 
     StepperMotor abc;
-    abc.run_steps(10, StepperMotor::MotorDirection::Backward);
+    RotaryEncoder xyz;
+    abc.run_steps(4, StepperMotor::MotorDirection::Backward);
+
 }
