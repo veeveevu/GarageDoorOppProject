@@ -15,7 +15,7 @@ set(CMAKE_CXX_STANDARD 20)
 # Creates a pico-sdk subdirectory in our project for the libraries
 pico_sdk_init()
 
-#add_compile_definitions(MQTTCLIENT_QOS2=1)
+add_compile_definitions(MQTTCLIENT_QOS2=1)
 
 add_compile_options(-Wall
         -Wno-format          # int != int32_t as far as the compiler is concerned because gcc has int32_t as long int
@@ -83,6 +83,11 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         spi
         paho.mqtt.embedded-c/MQTTPacket/src
         paho.mqtt.embedded-c/MQTTClient/src
+
+)
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+        USE_MQTT
 )
 
 # Link to pico_stdlib (gpio, time, etc. functions)

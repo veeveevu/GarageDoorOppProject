@@ -18,6 +18,7 @@
 #include "PicoSPIDevice.h"
 #include "RotaryEncoder.h"
 #include "StepperMotor.h"
+#include "MQTTCom.h"
 #include "Calibration.h"
 
 // We are using pins 0 and 1, but see the GPIO function select table in the
@@ -46,6 +47,10 @@ void messageArrived(MQTT::MessageData& md) {
 }
 
 
+void mqtt_init();
+
+void mqtt_loop();
+
 int main() {
     const uint led_pin = 22;
     const uint button = 9;
@@ -64,10 +69,15 @@ int main() {
 
     printf("\nBoot\n");
 
-    /*
+    //Initialize MQTT
+    mqtt_init();
+
+
     while (true) {
-        tight_loop_contents();
+        //tight_loop_contents();
+        mqtt_loop();
     }
+
     */
     StepperMotor m(2, 3, 6, 13);
 
