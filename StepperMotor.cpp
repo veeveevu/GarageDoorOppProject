@@ -11,7 +11,7 @@ StepperMotor::StepperMotor(uint in1_pin, uint in2_pin, uint in3_pin, uint in4_pi
 
 void StepperMotor::step(MotorDirection direction) {
 
-    if (direction == MotorDirection::Forward) {
+    if (direction == MotorDirection::ToOpen) {
         current_step = (current_step + 1) % 8;
     } else {
         current_step = (current_step - 1 + 8) % 8;

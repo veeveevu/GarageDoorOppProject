@@ -25,12 +25,21 @@ void RotaryEncoder::encoder_handler(uint gpio, uint32_t event_mask) {
         int direction;
         if (gpio_get(instance->Rot_B) == 0) {
             direction = 1; //turn right
-            printf("To close");
+            //printf("To close");
         }
         else {
             direction = -1; //turn left
-            printf("To open");
+            //printf("To open");
         }
         queue_try_add(&instance->rotary_events, &direction);
     }
+}
+
+void RotaryEncoder::flush() {
+    int trash;
+    while (queue_try_remove(&rotary_events, &trash)){}
+}
+
+bool RotaryEncoder::getEvent(int &direction) {
+    return queue_try_remove(&rotary_events, &direction);
 }
