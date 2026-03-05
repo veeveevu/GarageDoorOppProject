@@ -8,7 +8,8 @@
 class RotaryEncoder {
 public:
     RotaryEncoder(uint Rot_A_pin, uint Rot_B_pin);
-
+    bool getEvent(int &direction);
+    void flush();
 private:
     queue_t rotary_events{};
     uint Rot_A;

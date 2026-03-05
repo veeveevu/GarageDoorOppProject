@@ -6,8 +6,8 @@
 //{2, 3, 6, 13} // ~ IN1, IN2, IN3, IN4
 
 enum class MotorDirection {
-    Forward, //close -> open
-    Backward //open -> close
+    ToOpen, //close -> open
+    ToClose //open -> close
 };
 
 class StepperMotor {
