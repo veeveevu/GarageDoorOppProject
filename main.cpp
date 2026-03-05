@@ -19,6 +19,7 @@
 #include "RotaryEncoder.h"
 #include "StepperMotor.h"
 #include "MQTTCom.h"
+#include "Calibration.h"
 
 // We are using pins 0 and 1, but see the GPIO function select table in the
 // datasheet for information on which other pins can be used.
@@ -64,6 +65,7 @@ int main() {
 
     // Initialize chosen serial port
     stdio_init_all();
+    sleep_ms(2000);
 
     printf("\nBoot\n");
 
@@ -76,10 +78,16 @@ int main() {
         mqtt_loop();
     }
 
+    */
+    StepperMotor m(2, 3, 6, 13);
 
-    StepperMotor abc;
-    RotaryEncoder xyz;
-    LimitSwitch efd;
-    abc.run_steps(4, StepperMotor::MotorDirection::Backward);
+    LimitSwitch lm(14, 15);
+
+    RotaryEncoder re(27, 28);
+
+    Calibration clb(m, lm, re);
+
+
+    clb.do_calibration();
 
 }

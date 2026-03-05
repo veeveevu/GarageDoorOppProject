@@ -1,9 +1,10 @@
 #include "RotaryEncoder.h"
 
-queue_t RotaryEncoder::rotary_events;
+RotaryEncoder* RotaryEncoder::instance = nullptr;
 
-
-RotaryEncoder::RotaryEncoder() {
+RotaryEncoder::RotaryEncoder(uint Rot_A_pin, uint Rot_B_pin)
+    : Rot_A(Rot_A_pin), Rot_B(Rot_B_pin) {
+    instance = this;
     gpio_init(Rot_A);
     gpio_set_dir(Rot_A, GPIO_IN);
     gpio_disable_pulls(Rot_A);
@@ -16,20 +17,29 @@ RotaryEncoder::RotaryEncoder() {
     queue_init(&rotary_events, sizeof(int), 10);
 
     //set interrupt (only for Rot_A!!!)
-    gpio_set_irq_enabled_with_callback(Rot_A, GPIO_IRQ_EDGE_RISE, true, RotaryEncoder::encoder_handler);
+    gpio_set_irq_enabled_with_callback(Rot_A, GPIO_IRQ_EDGE_RISE, true, encoder_handler);
 }
 
-void RotaryEncoder::encoder_handler(unsigned gpio, uint32_t event_mask) {
-    if (gpio == Rot_A) {
+void RotaryEncoder::encoder_handler(uint gpio, uint32_t event_mask) {
+    if (gpio == instance->Rot_A) {
         int direction;
-        if (gpio_get(Rot_B) == 0) {
+        if (gpio_get(instance->Rot_B) == 0) {
             direction = 1; //turn right
-            printf("To close");
+            //printf("To close");
         }
         else {
             direction = -1; //turn left
-            printf("To open");
+            //printf("To open");
         }
-        queue_try_add(&rotary_events, &direction);
+        queue_try_add(&instance->rotary_events, &direction);
     }
+}
+
+void RotaryEncoder::flush() {
+    int trash;
+    while (queue_try_remove(&rotary_events, &trash)){}
+}
+
+bool RotaryEncoder::getEvent(int &direction) {
+    return queue_try_remove(&rotary_events, &direction);
 }

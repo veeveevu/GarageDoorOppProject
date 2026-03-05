@@ -64,6 +64,8 @@ add_executable(${PROJECT_NAME}
         EEPROM.cpp
         EEPROM.h
         DoorState.h
+        Calibration.cpp
+        Calibration.h
 )
 
 # Create map/bin/hex/uf2 files
