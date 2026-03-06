@@ -63,9 +63,10 @@ add_executable(${PROJECT_NAME}
         MQTTCom.h
         EEPROM.cpp
         EEPROM.h
-        DoorState.h
+        DoorStateMachine.h
         Calibration.cpp
         Calibration.h
+        DoorStateMachine.cpp
 )
 
 # Create map/bin/hex/uf2 files

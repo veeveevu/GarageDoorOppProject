@@ -9,9 +9,9 @@ StepperMotor::StepperMotor(uint in1_pin, uint in2_pin, uint in3_pin, uint in4_pi
     }
 }
 
-void StepperMotor::step(MotorDirection direction) {
+void StepperMotor::step(Direction direction) {
 
-    if (direction == MotorDirection::ToOpen) {
+    if (direction == Direction::ToOpen) {
         current_step = (current_step + 1) % 8;
     } else {
         current_step = (current_step - 1 + 8) % 8;
@@ -24,7 +24,7 @@ void StepperMotor::step(MotorDirection direction) {
     sleep_us(STEP_DELAY_US);
 }
 
-void StepperMotor::run_steps(int steps, MotorDirection direction) {
+void StepperMotor::run_steps(int steps, Direction direction) {
 
     for (int i = 0; i < steps; i ++) {
         step(direction);

@@ -11,22 +11,22 @@ void Calibration::do_calibration() {
         printf("Start from open\n");
 
         while (!limit_switch.is_Close_Switch_pressed()) {
-            motor.step(MotorDirection::ToClose);
+            motor.step(Direction::ToClose);
         }
     } else if (limit_switch.is_Close_Switch_pressed()) {
         printf("Start from close\n");
 
         while (limit_switch.is_Close_Switch_pressed()) {
-            motor.step(MotorDirection::ToOpen);
+            motor.step(Direction::ToOpen);
         }
 
         while (!limit_switch.is_Close_Switch_pressed()) {
-            motor.step(MotorDirection::ToClose);
+            motor.step(Direction::ToClose);
         }
     } else {
         printf("Start from mid\n");
         while (!limit_switch.is_Close_Switch_pressed()) {
-            motor.step(MotorDirection::ToClose);
+            motor.step(Direction::ToClose);
         }
     }
 
@@ -34,7 +34,7 @@ void Calibration::do_calibration() {
 
     //trip 1
     while (!limit_switch.is_Open_Switch_pressed()) {
-        motor.step(MotorDirection::ToOpen);
+        motor.step(Direction::ToOpen);
         ++motor_counter;
 
         int direction;
@@ -45,7 +45,7 @@ void Calibration::do_calibration() {
 
     //trip 2
     while (!limit_switch.is_Close_Switch_pressed()) {
-        motor.step(MotorDirection::ToClose);
+        motor.step(Direction::ToClose);
         ++motor_counter;
 
         int direction;
