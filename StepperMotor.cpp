@@ -25,11 +25,8 @@ void StepperMotor::step(MotorDirection direction) {
 }
 
 void StepperMotor::run_steps(int steps, MotorDirection direction) {
-    int steps_per_revolution = 2048; //fake num
 
-    int steps_to_run = steps * (steps_per_revolution / 8);
-
-    for (int i = 0; i < steps_to_run; i ++) {
+    for (int i = 0; i < steps; i ++) {
         step(direction);
         //sleep_ms(STEP_DELAY_MS);
     }

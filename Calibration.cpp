@@ -31,16 +31,29 @@ void Calibration::do_calibration() {
     }
 
     encoder.flush();
-    total_steps = 0;
 
+    //trip 1
     while (!limit_switch.is_Open_Switch_pressed()) {
         motor.step(MotorDirection::ToOpen);
+        ++motor_counter;
 
         int direction;
         while (encoder.getEvent(direction)) {
-            total_steps++;  // only count when encoder actually ticks
+            ++encoder_counter;  // only count when encoder actually ticks
         }
-
     }
-    printf("Total steps: %d", total_steps);
+
+    //trip 2
+    while (!limit_switch.is_Close_Switch_pressed()) {
+        motor.step(MotorDirection::ToClose);
+        ++motor_counter;
+
+        int direction;
+        while (encoder.getEvent(direction)) {
+            ++encoder_counter;  // only count when encoder actually ticks
+        }
+    }
+
+    printf("Encoder steps: %d\n", encoder_counter / 2);
+    printf("Motor steps: %d\n", motor_counter / 2);
 }

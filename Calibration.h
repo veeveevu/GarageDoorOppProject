@@ -13,7 +13,8 @@ private:
     StepperMotor &motor;
     LimitSwitch &limit_switch;
     RotaryEncoder &encoder;
-    int total_steps{0};
+    int encoder_counter{0};
+    int motor_counter{0};
 };
 
 #endif //GARAGE_DOOR_CALIBRATION_H
