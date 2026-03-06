@@ -20,6 +20,7 @@
 #include "StepperMotor.h"
 #include "MQTTCom.h"
 #include "Calibration.h"
+#include "Led.h"
 
 // We are using pins 0 and 1, but see the GPIO function select table in the
 // datasheet for information on which other pins can be used.
@@ -52,37 +53,29 @@ void mqtt_init();
 void mqtt_loop();
 
 int main() {
-    const uint led_pin = 22;
-    const uint button = 9;
-
-    // Initialize LED pin
-    gpio_init(led_pin);
-    gpio_set_dir(led_pin, GPIO_OUT);
-
-    gpio_init(button);
-    gpio_set_dir(button, GPIO_IN);
-    gpio_pull_up(button);
 
     // Initialize chosen serial port
     stdio_init_all();
-    sleep_ms(2000);
+    sleep_ms(1000);
 
     printf("\nBoot\n");
 
     //Initialize MQTT
     //mqtt_init();
 
-    StepperMotor m(2, 3, 6, 13);
+    //Led led1(20);
 
-    LimitSwitch lm(14, 15);
+    //StepperMotor m(2, 3, 6, 13);
 
-    RotaryEncoder re(27, 28);
+    //LimitSwitch lm(14, 15);
 
-    Calibration clb(m, lm, re);
+    //RotaryEncoder re(27, 28);
+
+    //Calibration clb(m, lm, re);
 
 
     //m.run_steps(1000, MotorDirection::ToOpen);
-    clb.do_calibration();
+    //clb.do_calibration();
 
 /*
     while (true) {
