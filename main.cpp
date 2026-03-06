@@ -70,15 +70,8 @@ int main() {
     printf("\nBoot\n");
 
     //Initialize MQTT
-    mqtt_init();
+    //mqtt_init();
 
-
-    while (true) {
-        //tight_loop_contents();
-        mqtt_loop();
-    }
-
-    */
     StepperMotor m(2, 3, 6, 13);
 
     LimitSwitch lm(14, 15);
@@ -88,6 +81,14 @@ int main() {
     Calibration clb(m, lm, re);
 
 
+    //m.run_steps(1000, MotorDirection::ToOpen);
     clb.do_calibration();
+
+/*
+    while (true) {
+        //tight_loop_contents();
+        mqtt_loop();
+    }
+*/
 
 }
