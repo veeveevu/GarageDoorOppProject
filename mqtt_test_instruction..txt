@@ -1,0 +1,82 @@
+Install docker.
+Create a folder "config".
+Copy mosquitto.conf to config folder
+Start mosquitto by running the following command in the parent folder of config.
+
+1. Khởi động MQTT Broker
+docker run -it --rm -p 1883:1883 -p 9001:9001 \
+  -v C:/Metropolia/OOP_in_IoT_Devices/project/docker/config:/mosquitto/config \
+  eclipse-mosquitto
+
+Ghi chú: thay C:/Metropolia/OOP_in_IoT_Devices/project/docker/config bằng đường dẫn đến folder config
+
+2. Chuẩn bị 3 terminal
+
+Terminal 1 — Subscribe status (theo dõi trạng thái cửa):
+bashdocker exec -it <container_name> mosquitto_sub -t "garage/door/status" -v
+
+Terminal 2 — Subscribe response (theo dõi kết quả lệnh):
+bashdocker exec -it <container_name> mosquitto_sub -t "garage/door/response" -v
+
+Terminal 3 — Publish command (gửi lệnh):
+bashdocker exec -it <container_name> mosquitto_pub -t "garage/door/command" -m "<command>"
+
+<container_name> thay đổi mỗi khi bật Docker Desktop
+
+3. Test cases
+Test 1: Gửi lệnh khi chưa calibrate
+bash# Terminal 3
+docker exec -it <container_name> mosquitto_pub -t "garage/door/command" -m "open"
+
+**Terminal 2 phải hiện:**
+
+garage/door/response {"command":"open","result":"Error: Not calibrated"}
+
+
+### Test 2: Calibrate
+Nhấn **SW0 + SW2** cùng lúc trên Pico để bắt đầu calibration.
+
+**Terminal 1 phải hiện sau khi calibration xong:**
+garage/door/status {"door":"Closed","error":"Normal","calibration":"Calibrated"}
+Hoặc gửi lệnh qua MQTT:
+bashdocker exec -it <container_name> mosquitto_pub -t "garage/door/command" -m "calibrate"
+
+Test 3: Mở cửa
+bashdocker exec -it <container_name> mosquitto_pub -t "garage/door/command" -m "open"
+
+**Terminal 2 phải hiện:**
+garage/door/response {"command":"open","result":"Success"}
+
+**Terminal 1 phải hiện (khi cửa đã mở xong):**
+garage/door/status {"door":"Open","error":"Normal","calibration":"Calibrated"}
+
+Test 4: Đóng cửa
+bashdocker exec -it <container_name> mosquitto_pub -t "garage/door/command" -m "close"
+
+**Terminal 2 phải hiện:**
+garage/door/response {"command":"close","result":"Success"}
+
+**Terminal 1 phải hiện:**
+garage/door/status {"door":"Closed","error":"Normal","calibration":"Calibrated"}
+
+Test 5: Pause khi đang di chuyển
+bash# Trước tiên gửi open
+docker exec -it <container_name> mosquitto_pub -t "garage/door/command" -m "open"
+# Rồi ngay sau đó gửi pause
+docker exec -it <container_name> mosquitto_pub -t "garage/door/command" -m "pause"
+
+**Terminal 2 phải hiện:**
+garage/door/response {"command":"pause","result":"Success"}
+
+Test 6: Gửi lệnh không hợp lệ
+bashdocker exec -it <container_name> mosquitto_pub -t "garage/door/command" -m "hello"
+
+**Terminal 2 phải hiện:**
+garage/door/response {"command":"hello","result":"Error: Unknown command"}
+
+Test 7: Gửi lệnh trùng trạng thái
+bash# Khi cửa đã đóng, gửi close lần nữa
+docker exec -it <container_name> mosquitto_pub -t "garage/door/command" -m "close"
+
+**Terminal 2 phải hiện:**
+garage/door/response {"command":"close","result":"Already closed"}

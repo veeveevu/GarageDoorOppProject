@@ -38,8 +38,6 @@
 #define STOP_BITS 1 // for simulator
 //#define STOP_BITS 2 // for real system
 
-DoorStateMachine doorStateMachine;
-
 int main() {
 
     // Initialize chosen serial port
