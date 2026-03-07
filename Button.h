@@ -11,6 +11,8 @@
 class Button {
 public:
     Button(uint button_pin);
+    bool is_pressed();
+
 private:
     uint button;
 
