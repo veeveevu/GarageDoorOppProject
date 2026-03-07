@@ -15,6 +15,10 @@ public:
 
 private:
     uint button;
+    absolute_time_t last_time = nil_time;
+    bool last_state = false;
+    bool initialized = false;
+    const uint32_t debounce_us = 30000;
 
 };
 #endif //GARAGE_DOOR_BUTTON_H

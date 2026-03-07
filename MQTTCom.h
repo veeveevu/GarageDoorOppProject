@@ -17,7 +17,6 @@ extern int mqtt_qos;
 
 void mqtt_init();
 void mqtt_loop();
-void messageArrived(MQTT::MessageData& md);
 bool is_mqtt_connected();
 
 #endif

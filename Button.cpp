@@ -10,20 +10,26 @@ Button::Button(uint button_pin)
 }
 
 bool Button::is_pressed() {
-    static absolute_time_t last_time = nil_time;
-    static bool last_state = true;
-
     absolute_time_t now = get_absolute_time();
-    if (absolute_time_diff_us(last_time, now) < 30000) return false;  // 30ms debounce
 
-    bool current = !gpio_get(button);  // active low (pull-up)
-    bool pressed = (last_state && !current);  // falling edge
+    bool current = !gpio_get(button);  // active low
+
+    if (!initialized) {
+        last_state = current;
+        last_time = now;
+        initialized = true;
+        return false;
+    }
+
+    if (absolute_time_diff_us(last_time, now) < debounce_us) return false;
+
+    bool pressed = (last_state && !current);
 
     if (pressed) {
-        std::cout << "[BUTTON] Pin %u pressed!\n" << button <<"/n";
+        printf("[BTN DEBUG] Pin %u pressed!\n", button);
     }
+
     last_state = current;
     last_time = now;
-
     return pressed;
 }

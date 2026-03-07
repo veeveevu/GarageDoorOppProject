@@ -13,7 +13,7 @@ LimitSwitch::LimitSwitch(uint open_switch_pin, uint close_switch_pin)
 
 bool LimitSwitch::debounce(uint switch_pin, const char* switch_name) {
     if (gpio_get(switch_pin) == 0) {
-        sleep_ms(DEBOUNCE_MS);
+        //sleep_ms(DEBOUNCE_MS);
 
         if (gpio_get(switch_pin) == 0) {
             printf("%s switch pressed\n", switch_name);
@@ -24,9 +24,27 @@ bool LimitSwitch::debounce(uint switch_pin, const char* switch_name) {
 }
 
 bool LimitSwitch::is_Open_Switch_pressed() {
-    return debounce(Open_Switch, "Open");
+    bool pressed = (gpio_get(Open_Switch) == 0);
+    if (pressed && !open_was_pressed) {
+        open_was_pressed = true;
+        printf("Open switch pressed\n");
+        return true;
+    }
+    if (!pressed) {
+        open_was_pressed = false;
+    }
+    return false;
 }
 
 bool LimitSwitch::is_Close_Switch_pressed() {
-    return debounce(Close_Switch, "Close");
+    bool pressed = (gpio_get(Close_Switch) == 0);
+    if (pressed && !close_was_pressed) {
+        close_was_pressed = true;
+        printf("Close switch pressed\n");
+        return true;
+    }
+    if (!pressed) {
+        close_was_pressed = false;
+    }
+    return false;
 }

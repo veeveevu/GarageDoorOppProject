@@ -3,7 +3,7 @@
 DoorStateMachine::DoorStateMachine()
     : state(DoorState::NOT_CALIBRATED), is_calibrated(false)
 {
-    load_state_from_eeprom();
+    //load_state_from_eeprom();
 }
 
 void DoorStateMachine::handle_event(Event event) {
@@ -11,7 +11,7 @@ void DoorStateMachine::handle_event(Event event) {
 
     switch (state) {
     case DoorState::NOT_CALIBRATED:
-        if (!is_calibrated || event == Event::SW0_SW2_PRESSED || event == Event::REMOTE_CALIBRATE) {
+        if (event == Event::SW0_SW2_PRESSED || event == Event::REMOTE_CALIBRATE) {
             state = DoorState::CALIBRATING;
         }
         break;
@@ -21,7 +21,10 @@ void DoorStateMachine::handle_event(Event event) {
             save_state_to_eeprom();
             state = DoorState::DOOR_CLOSED;
         }
-        state = DoorState::ERROR;
+        else
+        {
+            state = DoorState::ERROR;
+        }
         break;
     case DoorState::DOOR_CLOSED:
         if (event == Event::SW1_PRESSED || event == Event::REMOTE_OPEN) {
@@ -150,58 +153,30 @@ void DoorStateMachine::publish_mqtt_status() {
 }
 
 void DoorStateMachine::save_state_to_eeprom() {
-    char msg[LOG_MAX_STR_LEN];
-    snprintf(msg, sizeof(msg), "State:%d,Calib:%d,Dir:%d", static_cast<int>(state), is_calibrated ? 1 : 0, static_cast<int>(last_direction));
-    eeprom_log_write(msg);
+    uint8_t buf[3];
+    buf[0] = static_cast<uint8_t>(state);
+    buf[1] = is_calibrated ? 1 : 0;
+    buf[2] = static_cast<uint8_t>(last_direction);
+
+    eeprom_write_multi(EEPROM_STATE_ADDR, buf, 3);
+    printf("[EEPROM] Saved state: %d, calib: %d, dir: %d\n", buf[0], buf[1], buf[2]);
 }
 
 void DoorStateMachine::load_state_from_eeprom() {
-    int last_valid_slot = -1;
-    for (int i = LOG_MAX_ENTRIES - 1; i >= 0; --i) {
-        uint16_t addr = LOG_START_ADDR + i * LOG_ENTRY_SIZE;
-        if (is_valid_log_entry(addr)) {
-            last_valid_slot = i;
-            break;
+    uint8_t buf[3] = {0};
+    if (eeprom_read_multi(EEPROM_STATE_ADDR, buf, 3)) {
+        bool calib = (buf[1] == 1);
+        if (calib && buf[0] <= static_cast<uint8_t>(DoorState::ERROR)) {
+            state = static_cast<DoorState>(buf[0]);
+            is_calibrated = true;
+            last_direction = static_cast<Direction>(buf[2]);
+            printf("[EEPROM] Loaded: state=%d, calib=%d, dir=%d\n", buf[0], buf[1], buf[2]);
+            return;
         }
     }
-
-    if (last_valid_slot == -1) {
-        printf("[EEPROM] No valid log entry found, using default state\n");
-        state = DoorState::NOT_CALIBRATED;
-        is_calibrated = false;
-        //last_direction = Direction::None;
-        return;
-    }
-
-    uint16_t addr = LOG_START_ADDR + last_valid_slot * LOG_ENTRY_SIZE;
-    uint8_t buf[LOG_ENTRY_SIZE]{};
-    if (!eeprom_read_multi(addr, buf, LOG_ENTRY_SIZE)) {
-        printf("[EEPROM] Read failed for slot %d\n", last_valid_slot);
-        state = DoorState::NOT_CALIBRATED;
-        is_calibrated = false;
-        //last_direction = Direction::None;
-        return;
-    }
-
-    char msg[LOG_MAX_STR_LEN + 1] = {0};
-    size_t len = 0;
-    while (len < LOG_MAX_STR_LEN && buf[len] != 0) {
-        msg[len] = buf[len];
-        len++;
-    }
-    msg[len] = '\0';
-
-    int parsed_state = 0, parsed_calib = 0, parsed_dir = 0;
-    if (sscanf(msg, "State:%d,Calib:%d,Dir:%d", &parsed_state, &parsed_calib, &parsed_dir) == 3) {
-        state = static_cast<DoorState>(parsed_state);
-        is_calibrated = (parsed_calib == 1);
-        last_direction = static_cast<Direction>(parsed_dir);
-        printf("[EEPROM] Loaded: State=%d, Calib=%d, Dir=%d\n", parsed_state, parsed_calib, parsed_dir);
-    } else {
-        printf("[EEPROM] Parse failed: '%s'\n", msg);
-        state = DoorState::NOT_CALIBRATED;
-        is_calibrated = false;
-        //last_direction = Direction::None;
-    }
+    printf("[EEPROM] Reset to NOT_CALIBRATED\n");
+    state = DoorState::NOT_CALIBRATED;
+    is_calibrated = false;
+    last_direction = Direction::None;
 }
 

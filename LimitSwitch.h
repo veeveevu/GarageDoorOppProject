@@ -14,6 +14,8 @@ public:
     bool is_Open_Switch_pressed();
     bool is_Close_Switch_pressed();
 private:
+    bool open_was_pressed = false;
+    bool close_was_pressed = false;
     uint Open_Switch;
     uint Close_Switch;
     static constexpr int DEBOUNCE_MS = 10;

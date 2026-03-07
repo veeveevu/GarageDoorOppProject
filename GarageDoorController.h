@@ -19,8 +19,8 @@ constexpr uint MOTOR_IN2 = 3;
 constexpr uint MOTOR_IN3 = 6;
 constexpr uint MOTOR_IN4 = 13;
 
-constexpr uint ENC_A_PIN = 4;
-constexpr uint ENC_B_PIN = 5;
+constexpr uint ENC_A_PIN = 27;
+constexpr uint ENC_B_PIN = 28;
 
 constexpr uint LIMIT_OPEN_PIN  = 14;
 constexpr uint LIMIT_CLOSE_PIN = 15;
@@ -37,7 +37,7 @@ class GarageDoorController {
 public:
     GarageDoorController();
     void run();
-
+    static void messageArrived(MQTT::MessageData& md);
 private:
     DoorStateMachine state_machine;
 
@@ -57,6 +57,8 @@ private:
     absolute_time_t last_encoder_change = nil_time;
     const uint32_t debounce_us = 30000;
     const uint32_t stuck_timeout_us = 800000;
+
+    static GarageDoorController* instance;
 
     int total_steps = 0;
     int current_pos = 0;

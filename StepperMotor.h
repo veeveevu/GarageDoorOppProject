@@ -7,7 +7,8 @@
 
 enum class Direction {
     ToOpen, //close -> open
-    ToClose //open -> close
+    ToClose, //open -> close
+    None
 };
 
 class StepperMotor {

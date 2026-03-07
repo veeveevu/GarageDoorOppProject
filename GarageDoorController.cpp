@@ -1,5 +1,6 @@
 #include "GarageDoorController.h"
 #include <cstdio>
+#include <string>
 /*
 **The full journey of one button press, step by step:**
 
@@ -21,26 +22,40 @@
    → calls m_motor.step(Direction::Clockwise)
 
    */
+GarageDoorController* GarageDoorController::instance = nullptr;
 
-GarageDoorController::GarageDoorController() {
+GarageDoorController::GarageDoorController(){
+    printf("[CONSTR] Start constructor\n");
     // Init buttons pull-up
+    printf("[CONSTR] Init buttons...\n");
     gpio_init(SW0_PIN); gpio_set_dir(SW0_PIN, GPIO_IN); gpio_pull_up(SW0_PIN);
     gpio_init(SW1_PIN); gpio_set_dir(SW1_PIN, GPIO_IN); gpio_pull_up(SW1_PIN);
     gpio_init(SW2_PIN); gpio_set_dir(SW2_PIN, GPIO_IN); gpio_pull_up(SW2_PIN);
 
     // Init LEDs
+    printf("[CONSTR] Init LEDs...\n");
     gpio_init(LED_OPEN_PIN); gpio_set_dir(LED_OPEN_PIN, GPIO_OUT);
     gpio_init(LED_CLOSE_PIN); gpio_set_dir(LED_CLOSE_PIN, GPIO_OUT);
     gpio_init(LED_ERROR_PIN); gpio_set_dir(LED_ERROR_PIN, GPIO_OUT);
 
+    printf("[CONSTR] Before mqtt_init()\n");
     mqtt_init();
-    eeprom_log_init();
+    printf("[CONSTR] After mqtt_init()\n");
 
+    printf("[CONSTR] Before eeprom_log_init()\n");
+    eeprom_log_init();
+    printf("[CONSTR] After eeprom_log_init()\n");
+
+    printf("[CONSTR] Before load_state()\n");
     load_state();
+    printf("[CONSTR] After load_state()\n");
+
+    instance = this;
+    printf("[CONSTR] Constructor done!\n");
 }
 
 void GarageDoorController::run() {
-    while (true) {
+    printf("[RUN] Enter run loop\n");
         check_buttons();
         check_limits_and_encoder();
         check_stuck();
@@ -48,12 +63,15 @@ void GarageDoorController::run() {
         update_leds();
         mqtt_loop();
         sleep_us(5000);
-    }
+
 }
 
 void GarageDoorController::check_buttons() {
     absolute_time_t now = get_absolute_time();
-    if (absolute_time_diff_us(last_debounce, now) < debounce_us) return;
+    if (absolute_time_diff_us(last_debounce, now) < debounce_us) {
+        //printf("[CHECK_BTN DEBUG] Debounce skip\n");
+        return;
+    }
 
     if (sw0.is_pressed() && sw2.is_pressed()) {
         printf("[BTN] SW0 + SW2 pressed → Calibration!\n");
@@ -173,4 +191,96 @@ void GarageDoorController::load_state() {
 
 void GarageDoorController::save_state() {
     state_machine.save_state_to_eeprom();
+}
+
+void GarageDoorController::messageArrived(MQTT::MessageData& md) {
+    if (!instance) {
+        printf("[MQTT] Controller instance not set!\n");
+        return;
+    }
+
+    MQTT::Message& message = md.message;
+
+    char payload[message.payloadlen + 1];
+    memcpy(payload, message.payload, message.payloadlen);
+    payload[message.payloadlen] = '\0';
+
+    printf("[MQTT DEBUG] Received message: '%s'\n", payload);
+
+    std::string cmd(payload);
+    std::string result = "Success";
+
+    DoorState current_state = instance->state_machine.get_current_state();
+    bool is_calib = instance->state_machine.get_is_calibrated();
+
+    if (cmd == "open" || cmd == "OPEN") {
+        if (!is_calib) {
+            result = "Error: Not calibrated";
+        } else if (current_state == DoorState::DOOR_OPENED) {
+            result = "Already open";
+        } else if (current_state == DoorState::OPENING) {
+            result = "Already opening";
+        } else {
+            instance->state_machine.handle_event(Event::REMOTE_OPEN);
+            printf("[MQTT DEBUG] Triggered REMOTE_OPEN\n");
+        }
+    }
+    else if (cmd == "close" || cmd == "CLOSE") {
+        if (!is_calib) {
+            result = "Error: Not calibrated";
+        } else if (current_state == DoorState::DOOR_CLOSED) {
+            result = "Already closed";
+        } else if (current_state == DoorState::CLOSING) {
+            result = "Already closing";
+        } else {
+            instance->state_machine.handle_event(Event::REMOTE_CLOSE);
+            printf("[MQTT DEBUG] Triggered REMOTE_OPEN\n");
+        }
+    }
+    else if (cmd == "pause" || cmd == "PAUSE" || cmd == "stop" || cmd == "STOP") {
+        if (current_state == DoorState::OPENING || current_state == DoorState::CLOSING) {
+            instance->state_machine.handle_event(Event::REMOTE_PAUSE);
+            printf("[MQTT DEBUG] Triggered REMOTE_PAUSE\n");
+        } else {
+            result = "Not moving, ignore pause";
+        }
+    }
+    else if (cmd == "continue" || cmd == "CONTINUE") {
+        if (current_state == DoorState::STOPPED) {
+            instance->state_machine.handle_event(Event::REMOTE_CONTINUE);
+            printf("[MQTT DEBUG] Triggered REMOTE_CONTINUE\n");
+        } else {
+            result = "Not stopped, ignore continue";
+        }
+    }
+    else if (cmd == "calibrate" || cmd == "CALIBRATE") {
+        instance->state_machine.handle_event(Event::REMOTE_CALIBRATE);
+        printf("[MQTT DEBUG] Triggered REMOTE_CALIBRATE\n");
+    }
+    else {
+        result = "Error: Unknown command";
+    }
+
+    printf("[MQTT DEBUG] Command result: %s\n", result.c_str());
+
+    char resp[128];
+    snprintf(resp, sizeof(resp), "{\"command\":\"%s\",\"result\":\"%s\"}", payload, result.c_str());
+    printf("[MQTT DEBUG] Preparing response: %s\n", resp);
+
+    MQTT::Message resp_msg;
+    resp_msg.qos = MQTT::QOS0;
+    resp_msg.retained = false;
+    resp_msg.payload = (void*)resp;
+    resp_msg.payloadlen = strlen(resp);
+
+    int rc = client->publish("garage/door/response", resp_msg);  // client vẫn từ MQTTCom
+    printf("[MQTT DEBUG] Publish response rc = %d\n", rc);
+    if (rc != 0) {
+        printf("[MQTT ERROR] Publish response failed, rc=%d\n", rc);
+    } else {
+        printf("[MQTT DEBUG] Response sent: %s\n", resp);
+    }
+
+    instance->state_machine.publish_mqtt_status();
+    printf("[MQTT DEBUG] Published status after command\n");
 }

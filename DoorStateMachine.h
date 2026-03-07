@@ -8,6 +8,8 @@
 extern MQTT::Client<IPStack, Countdown>* client;
 extern bool client_is_connected();
 
+constexpr uint16_t EEPROM_STATE_ADDR = 32764;
+
 //state for state machine
 enum class DoorState {
     NOT_CALIBRATED, CALIBRATING, DOOR_CLOSED, DOOR_OPENED, CLOSING, OPENING,  STOPPED, ERROR
