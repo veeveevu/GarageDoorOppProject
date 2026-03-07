@@ -6,6 +6,8 @@
 #include "pico/time.h"
 #include <cstring>
 
+extern DoorStateMachine doorStateMachine;
+
 #ifdef USE_MQTT
     const char* topic = "garage/door/command";
 
@@ -123,97 +125,95 @@
     }
 
     void messageArrived(MQTT::MessageData& md)
-{
-    MQTT::Message& message = md.message;
+    {
+        MQTT::Message& message = md.message;
 
-    char payload[message.payloadlen + 1];
-    memcpy(payload, message.payload, message.payloadlen);
-    payload[message.payloadlen] = '\0';
+        char payload[message.payloadlen + 1];
+        memcpy(payload, message.payload, message.payloadlen);
+        payload[message.payloadlen] = '\0';
 
-    std::string cmd = payload;
-    std::string result = "Success";
-    bool success = true;
+        std::string cmd = payload;
+        std::string result = "Success";
+        bool success = true;
 
-    DoorState current_state = doorStateMachine.get_current_state();
-    bool is_calib = doorStateMachine.get_is_calibrated();
+        DoorState current_state = doorStateMachine.get_current_state();
+        bool is_calib = doorStateMachine.get_is_calibrated();
 
-    if (cmd == "open" || cmd == "OPEN") {
-        if (!is_calib) {
-            result = "Error: Not calibrated";
-            success = false;
-        } else if (current_state == DoorState::DOOR_OPENED) {
-            result = "Already open";
-            success = false;
-        } else if (current_state == DoorState::OPENING) {
-            result = "Already opening";
-            success = false;
-        } else {
-            doorStateMachine.handle_event(Event::REMOTE_OPEN);
+        if (cmd == "open" || cmd == "OPEN") {
+            if (!is_calib) {
+                result = "Error: Not calibrated";
+                success = false;
+            } else if (current_state == DoorState::DOOR_OPENED) {
+                result = "Already open";
+                success = false;
+            } else if (current_state == DoorState::OPENING) {
+                result = "Already opening";
+                success = false;
+            } else {
+                doorStateMachine.handle_event(Event::REMOTE_OPEN);
+            }
         }
-    }
-    else if (cmd == "close" || cmd == "CLOSE") {
-        if (!is_calib) {
-            result = "Error: Not calibrated";
-            success = false;
-        } else if (current_state == DoorState::DOOR_CLOSED) {
-            result = "Already closed";
-            success = false;
-        } else if (current_state == DoorState::CLOSING) {
-            result = "Already closing";
-            success = false;
-        } else {
-            doorStateMachine.handle_event(Event::REMOTE_CLOSE);
+        else if (cmd == "close" || cmd == "CLOSE") {
+            if (!is_calib) {
+                result = "Error: Not calibrated";
+                success = false;
+            } else if (current_state == DoorState::DOOR_CLOSED) {
+                result = "Already closed";
+                success = false;
+            } else if (current_state == DoorState::CLOSING) {
+                result = "Already closing";
+                success = false;
+            } else {
+                doorStateMachine.handle_event(Event::REMOTE_CLOSE);
+            }
         }
-    }
-    else if (cmd == "pause" || cmd == "PAUSE" || cmd == "stop" || cmd == "STOP") {
-        if (current_state == DoorState::OPENING || current_state == DoorState::CLOSING) {
-            doorStateMachine.handle_event(Event::REMOTE_PAUSE);
-        } else {
-            result = "Not moving, ignore pause";
+        else if (cmd == "pause" || cmd == "PAUSE" || cmd == "stop" || cmd == "STOP") {
+            if (current_state == DoorState::OPENING || current_state == DoorState::CLOSING) {
+                doorStateMachine.handle_event(Event::REMOTE_PAUSE);
+            } else {
+                result = "Not moving, ignore pause";
+                success = false;
+            }
+        }
+        else if (cmd == "continue" || cmd == "CONTINUE") {
+            if (current_state == DoorState::STOPPED) {
+                doorStateMachine.handle_event(Event::REMOTE_CONTINUE);
+            } else {
+                result = "Not stopped, ignore continue";
+                success = false;
+            }
+        }
+        else if (cmd == "calibrate" || cmd == "CALIBRATE") {
+            doorStateMachine.handle_event(Event::REMOTE_CALIBRATE);
+        }
+        else {
+            result = "Error: Unknown command";
             success = false;
         }
-    }
-    else if (cmd == "continue" || cmd == "CONTINUE") {
-        if (current_state == DoorState::STOPPED) {
-            doorStateMachine.handle_event(Event::REMOTE_CONTINUE);
+
+        if (success) {
+            printf("[MQTT] Command '%s' executed successfully\n", payload);
         } else {
-            result = "Not stopped, ignore continue";
-            success = false;
+            printf("[MQTT] Command '%s' failed: %s\n", payload, result.c_str());
         }
-    }
-    else if (cmd == "calibrate" || cmd == "CALIBRATE") {
-        doorStateMachine.handle_event(Event::REMOTE_CALIBRATE);
-    }
-    else {
-        result = "Error: Unknown command";
-        success = false;
-    }
 
-    if (success) {
-        printf("[MQTT] Command '%s' executed successfully\n", payload);
-    } else {
-        printf("[MQTT] Command '%s' failed: %s\n", payload, result.c_str());
+        char resp[128];
+        snprintf(resp, sizeof(resp),"{\"command\":\"%s\",\"result\":\"%s\"}",payload, result.c_str());
+
+        MQTT::Message resp_msg;
+        resp_msg.qos        = MQTT::QOS0;
+        resp_msg.retained   = false;
+        resp_msg.dup        = false;
+        resp_msg.payload    = (void*)resp;
+        resp_msg.payloadlen = strlen(resp);
+
+        int rc = client->publish("garage/door/response", resp_msg);
+        if (rc != 0) {
+            printf("Publish response failed, rc=%d\n", rc);
+        } else {
+            printf("Response sent: %s\n", resp);
+        }
+
+        doorStateMachine.publish_mqtt_status();
     }
-
-    char resp[128];
-    snprintf(resp, sizeof(resp),
-             "{\"command\":\"%s\",\"result\":\"%s\"}",
-             payload, result.c_str());
-
-    MQTT::Message resp_msg;
-    resp_msg.qos        = MQTT::QOS0;
-    resp_msg.retained   = false;
-    resp_msg.dup        = false;
-    resp_msg.payload    = (void*)resp;
-    resp_msg.payloadlen = strlen(resp);
-
-    int rc = client->publish("garage/door/response", resp_msg);
-    if (rc != 0) {
-        printf("Publish response failed, rc=%d\n", rc);
-    } else {
-        printf("Response sent: %s\n", resp);
-    }
-
-    doorStateMachine.publish_mqtt_status();
-}
 #endif

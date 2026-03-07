@@ -9,7 +9,7 @@
 #include "IPStack.h"
 #include "Countdown.h"
 #include "MQTTClient.h"
-
+#include "GarageDoorController.h"
 #include <iostream>
 
 #include "LimitSwitch.h"
@@ -38,19 +38,7 @@
 #define STOP_BITS 1 // for simulator
 //#define STOP_BITS 2 // for real system
 
-
-void messageArrived(MQTT::MessageData& md) {
-    MQTT::Message& message = md.message;
-
-    printf("Message arrived: qos %d, retained %d, dup %d, packetid %d\n",
-           message.qos, message.retained, message.dup, message.id);
-    printf("Payload %s\n", (char*)message.payload);
-}
-
-
-void mqtt_init();
-
-void mqtt_loop();
+DoorStateMachine doorStateMachine;
 
 int main() {
 
@@ -60,10 +48,8 @@ int main() {
 
     printf("\nBoot\n");
 
-    //Initialize MQTT
-    //mqtt_init();
-    //Initialize EEPROM
-    //eeprom_log_init();
+    GarageDoorController controller;
+    controller.run();
 
     //Led led1(20);
 
@@ -84,6 +70,7 @@ int main() {
         //tight_loop_contents();
         mqtt_loop();
     }
-*/
 
+*/
+    return 0;
 }

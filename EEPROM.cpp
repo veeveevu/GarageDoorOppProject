@@ -6,24 +6,6 @@
 #include <cstring>
 #include <cstdio>
 
-/*Usage:
-//in main:
-eeprom_log_init();
-//in state machine:
-eeprom_log_write("Entered STATE_SOMETHING");
-//debug:
-int ch = getchar_timeout_us(0);
-
-if (ch == 'r') {
-    printf("=== LOG ===\n");
-    eeprom_log_read_and_print();
-}
-
-else if (ch == 'e') {
-    eeprom_log_erase();
-    printf("Log erased.\n");
-}
-*/
 
 bool eeprom_write_multi(uint16_t addr, const uint8_t* data, size_t len) {
     if (len == 0 || len > 64) return false;
@@ -94,7 +76,7 @@ bool is_valid_log_entry(uint16_t entry_addr) {
 }
 
 static int find_next_free_slot() {
-    for (int i = 0; i < LOG_MAX_ENTRIES; ++i) {
+    for (unsigned int i = 0; i < LOG_MAX_ENTRIES; ++i) {
         uint16_t addr = LOG_START_ADDR + i * LOG_ENTRY_SIZE;
         if (!is_valid_log_entry(addr)) {
             return i;
@@ -134,7 +116,7 @@ void eeprom_log_write(const char* message) {
 }
 
 void eeprom_log_read_and_print() {
-    for (int i = 0; i < LOG_MAX_ENTRIES; ++i) {
+    for (unsigned int i = 0; i < LOG_MAX_ENTRIES; ++i) {
         uint16_t addr = LOG_START_ADDR + i * LOG_ENTRY_SIZE;
         if (!is_valid_log_entry(addr)) break;
 
@@ -146,7 +128,7 @@ void eeprom_log_read_and_print() {
 }
 
 void eeprom_log_erase() {
-    for (int i = 0; i < LOG_MAX_ENTRIES; ++i) {
+    for (unsigned int i = 0; i < LOG_MAX_ENTRIES; ++i) {
         uint16_t addr = LOG_START_ADDR + i * LOG_ENTRY_SIZE;
         eeprom_write_multi(addr, reinterpret_cast<const uint8_t*>("\0"), 1);
     }

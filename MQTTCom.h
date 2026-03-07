@@ -10,7 +10,6 @@
 #include "Countdown.h"
 #include "DoorStateMachine.h"
 
-extern DoorStateMachine doorStateMachine;
 
 extern const char* topic;
 extern int msg_count;

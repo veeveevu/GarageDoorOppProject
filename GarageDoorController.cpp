@@ -56,9 +56,11 @@ void GarageDoorController::check_buttons() {
     if (absolute_time_diff_us(last_debounce, now) < debounce_us) return;
 
     if (sw0.is_pressed() && sw2.is_pressed()) {
+        printf("[BTN] SW0 + SW2 pressed → Calibration!\n");
         state_machine.handle_event(Event::SW0_SW2_PRESSED);
     }
     if (sw1.is_pressed()) {
+        printf("[BTN] SW0 + SW2 pressed → Calibration!\n");
         state_machine.handle_event(Event::SW1_PRESSED);
     }
 
