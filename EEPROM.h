@@ -19,6 +19,9 @@ constexpr uint     LOG_ENTRY_SIZE    = 64;
 constexpr uint     LOG_MAX_ENTRIES   = 32;
 constexpr uint     LOG_MAX_STR_LEN   = 61;   // 64 - 1 null - 2 crc
 
+bool eeprom_write_multi(uint16_t addr, const uint8_t* data, size_t len);
+bool eeprom_read_multi(uint16_t addr, uint8_t* buffer, size_t len);
+bool is_valid_log_entry(uint16_t entry_addr);
 void eeprom_log_init();
 void eeprom_log_write(const char* message);
 void eeprom_log_read_and_print();

@@ -25,7 +25,7 @@ else if (ch == 'e') {
 }
 */
 
-static bool eeprom_write_multi(uint16_t addr, const uint8_t* data, size_t len) {
+bool eeprom_write_multi(uint16_t addr, const uint8_t* data, size_t len) {
     if (len == 0 || len > 64) return false;
 
     uint8_t buf[66];
@@ -38,7 +38,7 @@ static bool eeprom_write_multi(uint16_t addr, const uint8_t* data, size_t len) {
     return ret == static_cast<int>(len + 2);
 }
 
-static bool eeprom_read_multi(uint16_t addr, uint8_t* buffer, size_t len) {
+bool eeprom_read_multi(uint16_t addr, uint8_t* buffer, size_t len) {
     if (len == 0)
     {
         return false;
@@ -69,7 +69,7 @@ static uint16_t crc16(const uint8_t* data, size_t len) {
     return crc;
 }
 
-static bool is_valid_log_entry(uint16_t entry_addr) {
+bool is_valid_log_entry(uint16_t entry_addr) {
     uint8_t buf[LOG_ENTRY_SIZE]{};
     if (!eeprom_read_multi(entry_addr, buf, LOG_ENTRY_SIZE)) {
         return false;
@@ -151,3 +151,5 @@ void eeprom_log_erase() {
         eeprom_write_multi(addr, reinterpret_cast<const uint8_t*>("\0"), 1);
     }
 }
+
+

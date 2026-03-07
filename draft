@@ -1,0 +1,180 @@
+#include <cstdio>
+#include <cstring>
+#include <cmath>
+#include "pico/stdlib.h"
+#include "pico/time.h"
+#include "hardware/timer.h"
+#include "uart/PicoUart.h"
+
+#include "IPStack.h"
+#include "Countdown.h"
+#include "MQTTClient.h"
+
+#include <iostream>
+
+#include "LimitSwitch.h"
+#include "PicoI2CDevice.h"
+#include "PicoSPIBus.h"
+#include "PicoSPIDevice.h"
+#include "RotaryEncoder.h"
+#include "StepperMotor.h"
+#include "MQTTCom.h"
+#include "Calibration.h"
+#include "Led.h"
+
+// We are using pins 0 and 1, but see the GPIO function select table in the
+// datasheet for information on which other pins can be used.
+#if 0
+#define UART_NR 0
+#define UART_TX_PIN 0
+#define UART_RX_PIN 1
+#else
+#define UART_NR 1
+#define UART_TX_PIN 4
+#define UART_RX_PIN 5
+#endif
+
+#define BAUD_RATE 9600
+#define STOP_BITS 1 // for simulator
+//#define STOP_BITS 2 // for real system
+
+
+void messageArrived(MQTT::MessageData& md) {
+    MQTT::Message& message = md.message;
+
+    printf("Message arrived: qos %d, retained %d, dup %d, packetid %d\n",
+           message.qos, message.retained, message.dup, message.id);
+    printf("Payload %s\n", (char*)message.payload);
+}
+
+
+void mqtt_init();
+
+void mqtt_loop();
+
+int main() {
+
+    // Initialize chosen serial port
+    stdio_init_all();
+    sleep_ms(1000);
+
+    printf("\nBoot\n");
+
+    //Initialize MQTT
+    //mqtt_init();
+
+    //Led led1(20);
+
+    //StepperMotor m(2, 3, 6, 13);
+
+    //LimitSwitch lm(14, 15);
+
+    //RotaryEncoder re(27, 28);
+
+    //Calibration clb(m, lm, re);
+
+
+    //m.run_steps(1000, MotorDirection::ToOpen);
+    //clb.do_calibration();
+
+/*
+    while (true) {
+        //tight_loop_contents();
+        mqtt_loop();
+    }
+*/
+
+}
+
+
+************TEST EEPROM*************
+
+#include <stdio.h>
+#include "pico/stdlib.h"
+#include "hardware/i2c.h"
+#include "EEPROM.h"
+#include <string.h>
+
+int main() {
+    stdio_init_all();
+
+    eeprom_log_init();
+
+    printf("\n=== EEPROM LOG TEST START ===\n");
+    printf("Nhap cac lenh sau qua USB serial:\n");
+    printf("  e     : Erase toan bo log\n");
+    printf("  w <noi dung> : Ghi mot log (vi du: w Hello Pico)\n");
+    printf("  r     : Doc va in toan bo log\n");
+    printf("  f     : Fill test (ghi 35 log de test wrap-around)\n");
+    printf("  q     : Quit (chi in thong bao)\n");
+    printf("==============================\n\n");
+
+    char line[80] = {0};
+    int pos = 0;
+
+    while (true) {
+        int ch = getchar_timeout_us(0);
+
+        if (ch == PICO_ERROR_TIMEOUT) {
+            sleep_ms(50);
+            continue;
+        }
+
+        if (ch == '\r' || ch == '\n') {
+            line[pos] = '\0';
+
+            if (pos == 0) {
+                pos = 0;
+                continue;
+            }
+
+            printf(">> %s\n", line);
+
+            if (strcmp(line, "e") == 0) {
+                printf("Erasing log...\n");
+                eeprom_log_erase();
+                printf("Done.\n");
+            }
+            else if (strcmp(line, "r") == 0) {
+                printf("Reading log:\n");
+                eeprom_log_read_and_print();
+                printf("(end of log)\n");
+            }
+            else if (strcmp(line, "f") == 0) {
+                printf("Filling 35 test logs...\n");
+                for (int i = 1; i <= 35; i++) {
+                    char msg[80];
+                    snprintf(msg, sizeof(msg), "Test entry #%02d - %lu us", i, time_us_64());
+                    eeprom_log_write(msg);
+                }
+                printf("Done. Now read with 'r'\n");
+            }
+            else if (strncmp(line, "w ", 2) == 0) {
+                const char* msg = line + 2;
+                if (*msg != '\0') {
+                    printf("Writing: %s\n", msg);
+                    eeprom_log_write(msg);
+                } else {
+                    printf("Usage: w <message>\n");
+                }
+            }
+            else if (strcmp(line, "q") == 0) {
+                printf("Quit test mode.\n");
+            }
+            else {
+                printf("Unknown command.\n");
+            }
+
+            pos = 0;
+            printf("> ");
+        }
+        else if (pos < (int)sizeof(line) - 1) {
+            line[pos++] = (char)ch;
+        }
+        else {
+            pos = 0;  // overflow -> reset
+        }
+    }
+
+    return 0;
+}
