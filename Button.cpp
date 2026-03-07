@@ -1,4 +1,5 @@
 #include "Button.h"
+#include <iostream>
 
 Button::Button(uint button_pin)
     :button(button_pin)
@@ -18,6 +19,9 @@ bool Button::is_pressed() {
     bool current = !gpio_get(button);  // active low (pull-up)
     bool pressed = (last_state && !current);  // falling edge
 
+    if (pressed) {
+        std::cout << "[BUTTON] Pin %u pressed!\n" << button <<"/n";
+    }
     last_state = current;
     last_time = now;
 

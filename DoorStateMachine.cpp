@@ -7,6 +7,8 @@ DoorStateMachine::DoorStateMachine()
 }
 
 void DoorStateMachine::handle_event(Event event) {
+    printf("[STATE] Received event: %d, current state: %d\n", static_cast<int>(event), static_cast<int>(state));
+
     switch (state) {
     case DoorState::NOT_CALIBRATED:
         if (!is_calibrated || event == Event::SW0_SW2_PRESSED || event == Event::REMOTE_CALIBRATE) {
@@ -74,6 +76,7 @@ void DoorStateMachine::handle_event(Event event) {
         break;
 
     }
+    printf("[STATE] New state: %d\n", static_cast<int>(state));
     publish_mqtt_status();
     save_state_to_eeprom();
 }
