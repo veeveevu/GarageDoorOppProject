@@ -8,7 +8,7 @@ docker run -it --rm -p 1883:1883 -p 9001:9001 \
   -v C:/Metropolia/OOP_in_IoT_Devices/project/docker/config:/mosquitto/config \
   eclipse-mosquitto
 
-Ghi chú: thay C:/Metropolia/OOP_in_IoT_Devices/project/docker/config bằng đường dẫn đến folder config
+Lưu ý: thay C:/Metropolia/OOP_in_IoT_Devices/project/docker/config bằng đường dẫn đến folder config
 
 2. Chuẩn bị 3 terminal
 
@@ -21,7 +21,7 @@ bashdocker exec -it <container_name> mosquitto_sub -t "garage/door/response" -v
 Terminal 3 — Publish command (gửi lệnh):
 bashdocker exec -it <container_name> mosquitto_pub -t "garage/door/command" -m "<command>"
 
-<container_name> thay đổi mỗi khi bật Docker Desktop
+Lưu ý: <container_name> thay đổi mỗi khi bật Docker Desktop
 
 3. Test cases
 Test 1: Gửi lệnh khi chưa calibrate
@@ -80,3 +80,7 @@ docker exec -it <container_name> mosquitto_pub -t "garage/door/command" -m "clos
 
 **Terminal 2 phải hiện:**
 garage/door/response {"command":"close","result":"Already closed"}
+
+
+4. Command hợp lệ
+open, close, pause, continue, calibrate
