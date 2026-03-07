@@ -62,6 +62,8 @@ int main() {
 
     //Initialize MQTT
     //mqtt_init();
+    //Initialize EEPROM
+    //eeprom_log_init();
 
     //Led led1(20);
 
