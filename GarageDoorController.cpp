@@ -26,7 +26,9 @@ GarageDoorController* GarageDoorController::instance = nullptr;
 
 GarageDoorController::GarageDoorController()
     : calibration(motor, limits, encoder) {
-    printf("[CONSTR] Start constructor\n");
+    printf("[CONSTR] Start constructor...\n");
+
+/* have done these in smaller classes!
     // Init buttons pull-up
     printf("[CONSTR] Init buttons...\n");
     gpio_init(SW0_PIN);
@@ -47,6 +49,7 @@ GarageDoorController::GarageDoorController()
     gpio_set_dir(LED_CLOSE_PIN, GPIO_OUT);
     gpio_init(LED_ERROR_PIN);
     gpio_set_dir(LED_ERROR_PIN, GPIO_OUT);
+*/
 
     printf("[CONSTR] Before mqtt_init()\n");
     mqtt_init();
@@ -76,22 +79,25 @@ void GarageDoorController::run() {
 }
 
 void GarageDoorController::check_buttons() {
+
+    /* debounce in button class
     absolute_time_t now = get_absolute_time();
     if (absolute_time_diff_us(last_debounce, now) < debounce_us) {
         //printf("[CHECK_BTN DEBUG] Debounce skip\n");
         return;
     }
+    */
 
     if (sw0.is_pressed() && sw2.is_pressed()) {
         printf("[BTN] SW0 + SW2 pressed → Calibration!\n");
         state_machine.handle_event(Event::SW0_SW2_PRESSED);
     }
     if (sw1.is_pressed()) {
-        printf("[BTN] SW0 + SW2 pressed → Calibration!\n");
+        printf("[BTN] SW1 pressed!\n");
         state_machine.handle_event(Event::SW1_PRESSED);
     }
 
-    last_debounce = now;
+    //last_debounce = now;
 }
 
 void GarageDoorController::check_limits_and_encoder() {
