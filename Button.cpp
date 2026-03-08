@@ -1,5 +1,5 @@
 #include "Button.h"
-#include <iostream>
+#include <cstdio>
 
 Button::Button(uint button_pin)
     :button(button_pin)
@@ -10,26 +10,31 @@ Button::Button(uint button_pin)
 }
 
 bool Button::is_pressed() {
+
+    bool current_state = !gpio_get(button);  // active low
+
     absolute_time_t now = get_absolute_time();
 
-    bool current = !gpio_get(button);  // active low
+    //check if its been longer than debounce_us
+    if (absolute_time_diff_us(last_time, now) > debounce_us) {
 
-    if (!initialized) {
-        last_state = current;
-        last_time = now;
-        initialized = true;
-        return false;
+        //out of waiting period, the state has changed
+        if (current_state != last_state) {
+            last_state = current_state;
+            last_time = now;
+
+            if (current_state == true) {
+                printf("[BUTTON] Button pin %d is pressed.\n", button);
+                return true;
+            }
+        }
+
+    //if NO then in cooling down period -> if it stills bouncing reset the timer
+    } else {
+        if (current_state != last_state) {
+            last_time = now;
+            last_state = current_state;
+        }
     }
-
-    if (absolute_time_diff_us(last_time, now) < debounce_us) return false;
-
-    bool pressed = (last_state && !current);
-
-    if (pressed) {
-        printf("[BTN DEBUG] Pin %u pressed!\n", button);
-    }
-
-    last_state = current;
-    last_time = now;
-    return pressed;
+    return false;
 }
