@@ -44,6 +44,7 @@ private:
     StepperMotor motor{MOTOR_IN1, MOTOR_IN2, MOTOR_IN3, MOTOR_IN4};
     RotaryEncoder encoder{ENC_A_PIN, ENC_B_PIN};
     LimitSwitch limits{LIMIT_OPEN_PIN, LIMIT_CLOSE_PIN};
+    Calibration calibration;
 
     Button sw0{SW0_PIN};
     Button sw1{SW1_PIN};
@@ -60,7 +61,8 @@ private:
 
     static GarageDoorController* instance;
 
-    int total_steps = 0;
+    int total_motor_steps = 0;
+    int total_encoder_turns = 0;
     int current_pos = 0;
 
     void check_buttons();

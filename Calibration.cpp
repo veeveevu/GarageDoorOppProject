@@ -32,28 +32,44 @@ void Calibration::do_calibration() {
 
     encoder.flush();
 
+    int total_encoder_counter{0};
+    int total_motor_counter{0};
+
     //trip 1
     while (!limit_switch.is_Open_Switch_pressed()) {
         motor.step(Direction::ToOpen);
-        ++motor_counter;
+        ++total_motor_counter;
 
         int direction;
         while (encoder.getEvent(direction)) {
-            ++encoder_counter;  // only count when encoder actually ticks
+            ++total_encoder_counter;  // only count when encoder actually ticks
         }
     }
 
     //trip 2
     while (!limit_switch.is_Close_Switch_pressed()) {
         motor.step(Direction::ToClose);
-        ++motor_counter;
+        ++total_motor_counter;
 
         int direction;
         while (encoder.getEvent(direction)) {
-            ++encoder_counter;  // only count when encoder actually ticks
+            ++total_encoder_counter;  // only count when encoder actually ticks
         }
     }
 
-    printf("Encoder steps: %d\n", encoder_counter / 2);
-    printf("Motor steps: %d\n", motor_counter / 2);
+    encoder_counter = total_encoder_counter / 2;
+    motor_counter = total_motor_counter / 2;
+
+    printf("Encoder steps: %d\n", encoder_counter);
+    printf("Motor steps: %d\n", motor_counter);
 }
+
+int Calibration::get_encoder_counter() const {
+    return encoder_counter;
+}
+
+int Calibration::get_motor_counter() const {
+    return motor_counter;
+}
+
+
