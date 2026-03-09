@@ -1,55 +1,12 @@
 #include "GarageDoorController.h"
 #include <cstdio>
 #include <string>
-/*
-**The full journey of one button press, step by step:**
 
-1. User presses SW1 button physically
-
-2. GarageController::checkButtons() runs
-   → gpio reads LOW on SW1 pin
-   → "oh something happened, I'll label it ButtonPressed"
-   → calls m_stateMachine.handleEvent(Event::ButtonPressed)
-
-3. DoorStateMachine::handleEvent() receives it
-   → checks current state: Closed
-   → checks event: ButtonPressed
-   → finds the matching row in the table
-   → changes m_state to Opening
-
-4. GarageController::reactToState() runs
-   → reads state: Opening
-   → calls m_motor.step(Direction::Clockwise)
-
-   */
 GarageDoorController* GarageDoorController::instance = nullptr;
 
 GarageDoorController::GarageDoorController()
-    : calibration(motor, limits, encoder) {
+    : calibration_machine(motor, limits, encoder) {
     printf("[CONSTR] Start constructor...\n");
-
-/* have done these in smaller classes!
-    // Init buttons pull-up
-    printf("[CONSTR] Init buttons...\n");
-    gpio_init(SW0_PIN);
-    gpio_set_dir(SW0_PIN, GPIO_IN);
-    gpio_pull_up(SW0_PIN);
-    gpio_init(SW1_PIN);
-    gpio_set_dir(SW1_PIN, GPIO_IN);
-    gpio_pull_up(SW1_PIN);
-    gpio_init(SW2_PIN);
-    gpio_set_dir(SW2_PIN, GPIO_IN);
-    gpio_pull_up(SW2_PIN);
-
-    // Init LEDs
-    printf("[CONSTR] Init LEDs...\n");
-    gpio_init(LED_OPEN_PIN);
-    gpio_set_dir(LED_OPEN_PIN, GPIO_OUT);
-    gpio_init(LED_CLOSE_PIN);
-    gpio_set_dir(LED_CLOSE_PIN, GPIO_OUT);
-    gpio_init(LED_ERROR_PIN);
-    gpio_set_dir(LED_ERROR_PIN, GPIO_OUT);
-*/
 
     printf("[CONSTR] Before mqtt_init()\n");
     mqtt_init();
@@ -71,10 +28,14 @@ void GarageDoorController::run() {
     //printf("[RUN] Enter run loop\n");
     check_buttons();
     check_limits_and_encoder();
-    check_stuck();
-    react_to_state();
+    if (state_machine.get_current_state() == DoorState::CALIBRATING) {
+        perform_calibration();
+    } else {
+        check_stuck();
+        react_to_state();
+    }
     update_leds();
-    mqtt_loop();
+    //mqtt_loop();
     sleep_us(5000);
 }
 
@@ -87,14 +48,24 @@ void GarageDoorController::check_buttons() {
         return;
     }
     */
+    bool sw0_pressed = sw0.is_pressed();
+    bool sw1_pressed = sw1.is_pressed();
+    bool sw2_pressed = sw2.is_pressed();
 
-    if (sw0.is_pressed() && sw2.is_pressed()) {
+    if (sw0_pressed && sw2_pressed) {
         printf("[BTN] SW0 + SW2 pressed → Calibration!\n");
         state_machine.handle_event(Event::SW0_SW2_PRESSED);
+        return;
     }
-    if (sw1.is_pressed()) {
+    if (sw1_pressed) {
         printf("[BTN] SW1 pressed!\n");
         state_machine.handle_event(Event::SW1_PRESSED);
+    }
+    else if (sw0_pressed) {
+        printf("[BTN] SW0 pressed alone\n");
+    }
+    else if (sw2_pressed) {
+        printf("[BTN] SW2 pressed alone\n");
     }
 
     //last_debounce = now;
@@ -118,15 +89,27 @@ void GarageDoorController::check_limits_and_encoder() {
 void GarageDoorController::check_stuck() {
     auto st = state_machine.get_current_state();
     if (st == DoorState::OPENING || st == DoorState::CLOSING) {
-        if (absolute_time_diff_us(last_encoder_change, get_absolute_time()) > stuck_timeout_us) {
+        absolute_time_t now = get_absolute_time();
+        int64_t time_since_movement = absolute_time_diff_us(last_encoder_change, now);
+
+        if (time_since_movement > stuck_timeout_us) {
             state_machine.handle_event(Event::STUCK_FOUND);
-            printf("[STUCK] No movement detected!\n");
+            printf("[STUCK] No movement detected for %lld us!\n", time_since_movement);
         }
     }
 }
 
 void GarageDoorController::react_to_state() {
     auto st = state_machine.get_current_state();
+    static DoorState last_state = DoorState::NOT_CALIBRATED;
+
+    // Reset encoder timer when entering movement states
+    if ((st == DoorState::OPENING || st == DoorState::CLOSING) &&
+        (last_state != st)) {
+        last_encoder_change = get_absolute_time();
+        printf("[REACT] Started movement, reset stuck timer\n");
+        }
+    last_state = st;
 
     switch (st) {
     case DoorState::CALIBRATING:
@@ -142,6 +125,8 @@ void GarageDoorController::react_to_state() {
         break;
 
     case DoorState::STOPPED:
+        break;
+
     case DoorState::ERROR:
         break;
 
@@ -182,18 +167,36 @@ void GarageDoorController::perform_calibration() {
 */
 
 void GarageDoorController::perform_calibration() {
-    printf("[CALIB] Starting calibration...\n");
-    calibration.do_calibration();
+    if (calibration_started) {
+        return;
+    }
 
-    total_motor_steps = calibration.get_motor_counter();
-    total_encoder_turns = calibration.get_encoder_counter();
+    calibration_started = true;
+
+    printf("[CALIB] Starting calibration...\n");
+    printf("[CALIB] Current state before: %d\n", static_cast<int>(state_machine.get_current_state()));
+    bool success = calibration_machine.do_calibration();
+
+    total_motor_steps = calibration_machine.get_motor_counter();
+    total_encoder_turns = calibration_machine.get_encoder_counter();
     current_pos = 0;
+
+if (success) {
+    printf("[CALIB] Calibration succeeded!\n");
 
     printf("[CALIB] Total motor steps: %d\n", total_motor_steps);
     printf("[CALIB] Total encode turns: %d\n", total_encoder_turns);
+    printf("[CALIB] Current state before event: %d\n", static_cast<int>(state_machine.get_current_state()));
 
     state_machine.handle_event(Event::CALIBRATION_COMPLETE_SUCCESS);
+    printf("[CALIB] Current state after event: %d\n", static_cast<int>(state_machine.get_current_state()));
+
     save_state();
+} else {
+    printf("[CALIB] Failed — motor stuck!\n");
+    state_machine.handle_event(Event::STUCK_FOUND);
+}
+    calibration_started = false;
 }
 
 void GarageDoorController::update_leds() {

@@ -39,14 +39,15 @@
 //#define STOP_BITS 2 // for real system
 
 int main() {
-
     // Initialize chosen serial port
     stdio_init_all();
     sleep_ms(1000);
 
     printf("\nBoot\n");
 
-    /*
+    //StepperMotor m(2, 3, 6, 13);
+    //m.run_steps(5000, Direction::ToOpen);
+
     GarageDoorController controller;
 
     while (true)
@@ -62,7 +63,7 @@ int main() {
     */
     //Led led1(20);
 
-    StepperMotor m(2, 3, 6, 13);
+
 
     //LimitSwitch lm(14, 15);
 
@@ -71,15 +72,14 @@ int main() {
     //Calibration clb(m, lm, re);
 
 
-    m.run_steps(5000, Direction::ToOpen);
+
     //clb.do_calibration();
 
-/*
+    */
     while (true) {
-        //tight_loop_contents();
-        mqtt_loop();
+        controller.run();
     }
 
-*/
+
     return 0;
 }
