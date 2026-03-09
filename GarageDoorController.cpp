@@ -68,7 +68,7 @@ GarageDoorController::GarageDoorController()
 }
 
 void GarageDoorController::run() {
-    printf("[RUN] Enter run loop\n");
+    //printf("[RUN] Enter run loop\n");
     check_buttons();
     check_limits_and_encoder();
     check_stuck();
@@ -229,6 +229,7 @@ void GarageDoorController::save_state() {
 }
 
 void GarageDoorController::messageArrived(MQTT::MessageData& md) {
+    printf("[MQTT] messageArrived called!\n");
     if (!instance) {
         printf("[MQTT] Controller instance not set!\n");
         return;
