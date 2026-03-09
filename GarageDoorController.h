@@ -13,6 +13,7 @@
 #include "RotaryEncoder.h"
 #include "StepperMotor.h"
 #include "DoorStateMachine.h"
+#include "Calibration.h"
 
 constexpr uint MOTOR_IN1 = 2;
 constexpr uint MOTOR_IN2 = 3;
@@ -33,6 +34,7 @@ constexpr uint LED_OPEN_PIN  = 20;
 constexpr uint LED_CLOSE_PIN = 21;
 constexpr uint LED_ERROR_PIN = 22;
 
+
 class GarageDoorController {
 public:
     GarageDoorController();
@@ -42,8 +44,10 @@ private:
     DoorStateMachine state_machine;
 
     StepperMotor motor{MOTOR_IN1, MOTOR_IN2, MOTOR_IN3, MOTOR_IN4};
-    RotaryEncoder encoder{ENC_A_PIN, ENC_B_PIN};
     LimitSwitch limits{LIMIT_OPEN_PIN, LIMIT_CLOSE_PIN};
+    RotaryEncoder encoder{ENC_A_PIN, ENC_B_PIN};
+
+    Calibration calibration;
 
     Button sw0{SW0_PIN};
     Button sw1{SW1_PIN};
@@ -53,14 +57,15 @@ private:
     Led led_close{LED_CLOSE_PIN};
     Led led_error{LED_ERROR_PIN};
 
-    absolute_time_t last_debounce = nil_time;
+    //absolute_time_t last_debounce = nil_time;
     absolute_time_t last_encoder_change = nil_time;
     const uint32_t debounce_us = 30000;
     const uint32_t stuck_timeout_us = 800000;
 
     static GarageDoorController* instance;
 
-    int total_steps = 0;
+    int total_motor_steps = 0;
+    int total_encoder_turns = 0;
     int current_pos = 0;
 
     void check_buttons();

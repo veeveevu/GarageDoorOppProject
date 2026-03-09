@@ -49,6 +49,12 @@ int main() {
     GarageDoorController controller;
     controller.run();
 
+    /*
+    Button sw0{SW0_PIN};
+    while (true) {
+        sw0.is_pressed();
+    }
+
     //Led led1(20);
 
     //StepperMotor m(2, 3, 6, 13);

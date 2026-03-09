@@ -24,19 +24,32 @@
    */
 GarageDoorController* GarageDoorController::instance = nullptr;
 
-GarageDoorController::GarageDoorController(){
-    printf("[CONSTR] Start constructor\n");
+GarageDoorController::GarageDoorController()
+    : calibration(motor, limits, encoder) {
+    printf("[CONSTR] Start constructor...\n");
+
+/* have done these in smaller classes!
     // Init buttons pull-up
     printf("[CONSTR] Init buttons...\n");
-    gpio_init(SW0_PIN); gpio_set_dir(SW0_PIN, GPIO_IN); gpio_pull_up(SW0_PIN);
-    gpio_init(SW1_PIN); gpio_set_dir(SW1_PIN, GPIO_IN); gpio_pull_up(SW1_PIN);
-    gpio_init(SW2_PIN); gpio_set_dir(SW2_PIN, GPIO_IN); gpio_pull_up(SW2_PIN);
+    gpio_init(SW0_PIN);
+    gpio_set_dir(SW0_PIN, GPIO_IN);
+    gpio_pull_up(SW0_PIN);
+    gpio_init(SW1_PIN);
+    gpio_set_dir(SW1_PIN, GPIO_IN);
+    gpio_pull_up(SW1_PIN);
+    gpio_init(SW2_PIN);
+    gpio_set_dir(SW2_PIN, GPIO_IN);
+    gpio_pull_up(SW2_PIN);
 
     // Init LEDs
     printf("[CONSTR] Init LEDs...\n");
-    gpio_init(LED_OPEN_PIN); gpio_set_dir(LED_OPEN_PIN, GPIO_OUT);
-    gpio_init(LED_CLOSE_PIN); gpio_set_dir(LED_CLOSE_PIN, GPIO_OUT);
-    gpio_init(LED_ERROR_PIN); gpio_set_dir(LED_ERROR_PIN, GPIO_OUT);
+    gpio_init(LED_OPEN_PIN);
+    gpio_set_dir(LED_OPEN_PIN, GPIO_OUT);
+    gpio_init(LED_CLOSE_PIN);
+    gpio_set_dir(LED_CLOSE_PIN, GPIO_OUT);
+    gpio_init(LED_ERROR_PIN);
+    gpio_set_dir(LED_ERROR_PIN, GPIO_OUT);
+*/
 
     printf("[CONSTR] Before mqtt_init()\n");
     mqtt_init();
@@ -56,33 +69,35 @@ GarageDoorController::GarageDoorController(){
 
 void GarageDoorController::run() {
     printf("[RUN] Enter run loop\n");
-        check_buttons();
-        check_limits_and_encoder();
-        check_stuck();
-        react_to_state();
-        update_leds();
-        mqtt_loop();
-        sleep_us(5000);
-
+    check_buttons();
+    check_limits_and_encoder();
+    check_stuck();
+    react_to_state();
+    update_leds();
+    mqtt_loop();
+    sleep_us(5000);
 }
 
 void GarageDoorController::check_buttons() {
+
+    /* debounce in button class
     absolute_time_t now = get_absolute_time();
     if (absolute_time_diff_us(last_debounce, now) < debounce_us) {
         //printf("[CHECK_BTN DEBUG] Debounce skip\n");
         return;
     }
+    */
 
     if (sw0.is_pressed() && sw2.is_pressed()) {
         printf("[BTN] SW0 + SW2 pressed → Calibration!\n");
         state_machine.handle_event(Event::SW0_SW2_PRESSED);
     }
     if (sw1.is_pressed()) {
-        printf("[BTN] SW0 + SW2 pressed → Calibration!\n");
+        printf("[BTN] SW1 pressed!\n");
         state_machine.handle_event(Event::SW1_PRESSED);
     }
 
-    last_debounce = now;
+    //last_debounce = now;
 }
 
 void GarageDoorController::check_limits_and_encoder() {
@@ -114,27 +129,28 @@ void GarageDoorController::react_to_state() {
     auto st = state_machine.get_current_state();
 
     switch (st) {
-        case DoorState::CALIBRATING:
-            perform_calibration();
-            break;
+    case DoorState::CALIBRATING:
+        perform_calibration();
+        break;
 
-        case DoorState::OPENING:
-            motor.step(Direction::ToOpen);
-            break;
+    case DoorState::OPENING:
+        motor.step(Direction::ToOpen);
+        break;
 
-        case DoorState::CLOSING:
-            motor.step(Direction::ToClose);
-            break;
+    case DoorState::CLOSING:
+        motor.step(Direction::ToClose);
+        break;
 
-        case DoorState::STOPPED:
-        case DoorState::ERROR:
-            break;
+    case DoorState::STOPPED:
+    case DoorState::ERROR:
+        break;
 
-        default:
-            break;
+    default:
+        break;
     }
 }
 
+/*
 void GarageDoorController::perform_calibration() {
     printf("[CALIB] Starting calibration...\n");
 
@@ -163,6 +179,22 @@ void GarageDoorController::perform_calibration() {
     state_machine.handle_event(Event::CALIBRATION_COMPLETE_SUCCESS);
     save_state();
 }
+*/
+
+void GarageDoorController::perform_calibration() {
+    printf("[CALIB] Starting calibration...\n");
+    calibration.do_calibration();
+
+    total_motor_steps = calibration.get_motor_counter();
+    total_encoder_turns = calibration.get_encoder_counter();
+    current_pos = 0;
+
+    printf("[CALIB] Total motor steps: %d\n", total_motor_steps);
+    printf("[CALIB] Total encode turns: %d\n", total_encoder_turns);
+
+    state_machine.handle_event(Event::CALIBRATION_COMPLETE_SUCCESS);
+    save_state();
+}
 
 void GarageDoorController::update_leds() {
     auto st = state_machine.get_current_state();
@@ -170,17 +202,20 @@ void GarageDoorController::update_leds() {
     if (st == DoorState::DOOR_OPENED) {
         led_open.turn_led_on();
         led_close.turn_led_off();
-    } else if (st == DoorState::DOOR_CLOSED) {
+    }
+    else if (st == DoorState::DOOR_CLOSED) {
         led_close.turn_led_on();
         led_open.turn_led_off();
-    } else {
+    }
+    else {
         led_open.turn_led_off();
         led_close.turn_led_off();
     }
 
     if (st == DoorState::ERROR) {
         led_error.blink_led();
-    } else {
+    }
+    else {
         led_error.turn_led_off();
     }
 }
@@ -216,11 +251,14 @@ void GarageDoorController::messageArrived(MQTT::MessageData& md) {
     if (cmd == "open" || cmd == "OPEN") {
         if (!is_calib) {
             result = "Error: Not calibrated";
-        } else if (current_state == DoorState::DOOR_OPENED) {
+        }
+        else if (current_state == DoorState::DOOR_OPENED) {
             result = "Already open";
-        } else if (current_state == DoorState::OPENING) {
+        }
+        else if (current_state == DoorState::OPENING) {
             result = "Already opening";
-        } else {
+        }
+        else {
             instance->state_machine.handle_event(Event::REMOTE_OPEN);
             printf("[MQTT DEBUG] Triggered REMOTE_OPEN\n");
         }
@@ -228,11 +266,14 @@ void GarageDoorController::messageArrived(MQTT::MessageData& md) {
     else if (cmd == "close" || cmd == "CLOSE") {
         if (!is_calib) {
             result = "Error: Not calibrated";
-        } else if (current_state == DoorState::DOOR_CLOSED) {
+        }
+        else if (current_state == DoorState::DOOR_CLOSED) {
             result = "Already closed";
-        } else if (current_state == DoorState::CLOSING) {
+        }
+        else if (current_state == DoorState::CLOSING) {
             result = "Already closing";
-        } else {
+        }
+        else {
             instance->state_machine.handle_event(Event::REMOTE_CLOSE);
             printf("[MQTT DEBUG] Triggered REMOTE_OPEN\n");
         }
@@ -241,7 +282,8 @@ void GarageDoorController::messageArrived(MQTT::MessageData& md) {
         if (current_state == DoorState::OPENING || current_state == DoorState::CLOSING) {
             instance->state_machine.handle_event(Event::REMOTE_PAUSE);
             printf("[MQTT DEBUG] Triggered REMOTE_PAUSE\n");
-        } else {
+        }
+        else {
             result = "Not moving, ignore pause";
         }
     }
@@ -249,7 +291,8 @@ void GarageDoorController::messageArrived(MQTT::MessageData& md) {
         if (current_state == DoorState::STOPPED) {
             instance->state_machine.handle_event(Event::REMOTE_CONTINUE);
             printf("[MQTT DEBUG] Triggered REMOTE_CONTINUE\n");
-        } else {
+        }
+        else {
             result = "Not stopped, ignore continue";
         }
     }
@@ -273,11 +316,12 @@ void GarageDoorController::messageArrived(MQTT::MessageData& md) {
     resp_msg.payload = (void*)resp;
     resp_msg.payloadlen = strlen(resp);
 
-    int rc = client->publish("garage/door/response", resp_msg);  // client vẫn từ MQTTCom
+    int rc = client->publish("garage/door/response", resp_msg); // client vẫn từ MQTTCom
     printf("[MQTT DEBUG] Publish response rc = %d\n", rc);
     if (rc != 0) {
         printf("[MQTT ERROR] Publish response failed, rc=%d\n", rc);
-    } else {
+    }
+    else {
         printf("[MQTT DEBUG] Response sent: %s\n", resp);
     }
 

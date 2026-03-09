@@ -9,6 +9,9 @@ class Calibration {
 public:
     Calibration(StepperMotor &motor, LimitSwitch &limit_switch, RotaryEncoder &encoder);
     void do_calibration();
+    int get_encoder_counter() const;
+    int get_motor_counter() const;
+
 private:
     StepperMotor &motor;
     LimitSwitch &limit_switch;
