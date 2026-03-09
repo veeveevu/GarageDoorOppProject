@@ -54,7 +54,6 @@ int main() {
     {
         controller.run();
     }
-    */
     /*
     Button sw0{SW0_PIN};
     while (true) {
@@ -75,10 +74,6 @@ int main() {
 
     //clb.do_calibration();
 
-    */
-    while (true) {
-        controller.run();
-    }
 
 
     return 0;
