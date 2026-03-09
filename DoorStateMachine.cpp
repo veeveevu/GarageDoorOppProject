@@ -20,9 +20,8 @@ void DoorStateMachine::handle_event(Event event) {
             is_calibrated = true;
             save_state_to_eeprom();
             state = DoorState::DOOR_CLOSED;
-        }
-        else
-        {
+        } else if (event == Event::STUCK_FOUND) {
+            printf("[STATE] Calibration failed - going to ERROR\n");
             state = DoorState::ERROR;
         }
         break;

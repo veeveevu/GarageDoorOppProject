@@ -13,6 +13,8 @@ public:
 
     bool is_Open_Switch_pressed();
     bool is_Close_Switch_pressed();
+    bool is_Close_Switch_held() const;
+    bool is_Open_Switch_held() const;
 private:
     bool open_was_pressed = false;
     bool close_was_pressed = false;

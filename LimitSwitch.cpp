@@ -48,3 +48,10 @@ bool LimitSwitch::is_Close_Switch_pressed() {
     }
     return false;
 }
+
+bool LimitSwitch::is_Close_Switch_held() const {
+    return gpio_get(Close_Switch) == 0;  // just raw level, no edge tracking
+}
+bool LimitSwitch::is_Open_Switch_held() const {
+    return gpio_get(Open_Switch) == 0;
+}

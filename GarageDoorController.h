@@ -47,7 +47,7 @@ private:
     LimitSwitch limits{LIMIT_OPEN_PIN, LIMIT_CLOSE_PIN};
     RotaryEncoder encoder{ENC_A_PIN, ENC_B_PIN};
 
-    Calibration calibration;
+    Calibration calibration_machine;
 
     Button sw0{SW0_PIN};
     Button sw1{SW1_PIN};
@@ -67,6 +67,8 @@ private:
     int total_motor_steps = 0;
     int total_encoder_turns = 0;
     int current_pos = 0;
+
+    bool calibration_started = false;
 
     void check_buttons();
     void check_limits_and_encoder();
