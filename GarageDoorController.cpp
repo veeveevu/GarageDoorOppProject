@@ -232,6 +232,7 @@ void GarageDoorController::save_state() {
 }
 
 void GarageDoorController::messageArrived(MQTT::MessageData& md) {
+    printf("[MQTT] messageArrived called!\n");
     if (!instance) {
         printf("[MQTT] Controller instance not set!\n");
         return;
