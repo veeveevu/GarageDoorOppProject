@@ -46,13 +46,14 @@ int main() {
 
     printf("\nBoot\n");
 
+    GarageDoorController controller;
+    controller.run();
+
+    /*
     Button sw0{SW0_PIN};
     while (true) {
         sw0.is_pressed();
     }
-
-    //GarageDoorController controller;
-    //controller.run();
 
     //Led led1(20);
 

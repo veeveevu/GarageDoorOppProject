@@ -26,17 +26,40 @@
         //IPStack ipstack("SmartIotMQTT", "SmartIot"); // example
         //IPStack ipstack("MP-IOT", "3QDaDHLn10"); // Karamalmi
         //IPSTack ipstack("MP-IOT", "ID2vOcYrWi"); //Myyrmaki
-        ipstack = new IPStack("TP-Link_FFDC", "61172937");
+        ipstack = new IPStack("MP-IOT", "ID2vOcYrWi"); // Karamalmi
+        //ipstack = new IPStack("TP-Link_FFDC", "61172937");
         client  = new MQTT::Client<IPStack, Countdown>(*ipstack);
 
         //int rc = ipstack.connect("192.168.1.10", 1883);
-        int rc = ipstack->connect("192.168.1.104", 1883); //Tram's Home IP
+        int rc = ipstack->connect("10.161.4.56", 1883); //Tram's School IP
+        //int rc = ipstack->connect("192.168.1.104", 1883); //Tram's Home IP
         printf("[MQTT DEBUG] TCP connect rc = %d\n", rc);
-        if (rc != 1) {
+        if (rc != 0) {
             printf("[MQTT ERROR] rc from TCP connect is %d\n", rc);
+            return;
         }
 
-        printf("[MQTT DEBUG] MQTT connecting\n");
+        printf("[MQTT DEBUG] Waiting for TCP connection...\n");
+        bool tcp_ok = false;
+        auto timeout = make_timeout_time_ms(10000);
+        while (!time_reached(timeout)) {
+            cyw43_arch_poll();
+            sleep_ms(10);
+            int test = client->connect(data);
+            if (test == 0) {
+                tcp_ok = true;
+                printf("[MQTT DEBUG] MQTT connected!\n");
+                break;
+            }
+        }
+
+        if (!tcp_ok) {
+            printf("[MQTT ERROR] Connection timeout!\n");
+            return;
+        }
+        //printf("[MQTT DEBUG] TCP wait done, trying MQTT connect\n");
+
+        //printf("[MQTT DEBUG] MQTT connecting\n");
 
         data.MQTTVersion = 3;
         data.clientID.cstring = (char*)"PicoW-sample";
@@ -70,9 +93,24 @@
             mqtt_send = delayed_by_ms(mqtt_send, 2000);
             if (!client->isConnected()) {
                 printf("[MQTT DEBUG] Not connected...\n");
-                int rc = client->connect(data);
+
+                ipstack->disconnect();
+                int rc = ipstack->connect("192.168.1.104", 1883);
+                if (rc != ERR_OK) {
+                    printf("[MQTT ERROR] TCP reconnect failed: %d\n", rc);
+                    return;
+                }
+
+                auto timeout = make_timeout_time_ms(2000);
+                while (!time_reached(timeout)) {
+                    cyw43_arch_poll();
+                    sleep_ms(10);
+                }
+
+                rc = client->connect(data);
                 if (rc != 0) {
                     printf("[MQTT ERROR] rc from MQTT connect is %d\n", rc);
+                    return;
                 }
             }
             char buf[100];
