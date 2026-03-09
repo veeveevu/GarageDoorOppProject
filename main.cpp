@@ -46,18 +46,23 @@ int main() {
 
     printf("\nBoot\n");
 
+    /*
     GarageDoorController controller;
-    controller.run();
 
+    while (true)
+    {
+        controller.run();
+    }
+    */
     /*
     Button sw0{SW0_PIN};
     while (true) {
         sw0.is_pressed();
     }
-
+    */
     //Led led1(20);
 
-    //StepperMotor m(2, 3, 6, 13);
+    StepperMotor m(2, 3, 6, 13);
 
     //LimitSwitch lm(14, 15);
 
@@ -66,7 +71,7 @@ int main() {
     //Calibration clb(m, lm, re);
 
 
-    //m.run_steps(1000, MotorDirection::ToOpen);
+    m.run_steps(5000, Direction::ToOpen);
     //clb.do_calibration();
 
 /*

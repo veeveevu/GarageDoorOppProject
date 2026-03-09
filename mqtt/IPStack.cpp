@@ -77,7 +77,7 @@ int IPStack::connect(const char *hostname, int port) {
  */
 err_t IPStack::tcp_client_sent(void *arg, struct tcp_pcb *tpcb, u16_t len) {
     //auto state = static_cast<IPStack *>(arg);
-    DEBUG_printf("tcp_client_sent %u\n", len);
+    //DEBUG_printf("tcp_client_sent %u\n", len);
 
     return ERR_OK;
 }
