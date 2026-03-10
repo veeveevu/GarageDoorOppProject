@@ -54,6 +54,7 @@ private:
     DoorState state;
     Direction last_direction{};
     bool is_calibrated;
+    bool stuck_detected = false;
 };
 
 #endif //GARAGE_DOOR_DOORSTATE_H

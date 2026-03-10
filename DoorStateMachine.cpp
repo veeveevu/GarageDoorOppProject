@@ -7,11 +7,12 @@ DoorStateMachine::DoorStateMachine()
 }
 
 void DoorStateMachine::handle_event(Event event) {
-    printf("[STATE] Received event: %d, current state: %d\n", static_cast<int>(event), static_cast<int>(state));
+    //printf("[STATE] Received event: %d, current state: %d\n", static_cast<int>(event), static_cast<int>(state));
 
     switch (state) {
     case DoorState::NOT_CALIBRATED:
         if (event == Event::SW0_SW2_PRESSED || event == Event::REMOTE_CALIBRATE) {
+            stuck_detected = false;
             state = DoorState::CALIBRATING;
         }
         break;
@@ -45,6 +46,8 @@ void DoorStateMachine::handle_event(Event event) {
             state = DoorState::STOPPED;
         }
         if (event == Event::STUCK_FOUND) {
+            printf("DOOR STUCK detected while OPENING!\n");
+            stuck_detected = true;
             is_calibrated = false;
             state = DoorState::NOT_CALIBRATED;
         }
@@ -57,6 +60,8 @@ void DoorStateMachine::handle_event(Event event) {
             state = DoorState::STOPPED;
         }
         if (event == Event::STUCK_FOUND) {
+            printf("DOOR STUCK detected while CLOSING!\n");
+            stuck_detected = true;
             is_calibrated = false;
             state = DoorState::NOT_CALIBRATED;
 
@@ -80,7 +85,7 @@ void DoorStateMachine::handle_event(Event event) {
         break;
 
     }
-    printf("[STATE] New state: %d\n", static_cast<int>(state));
+    //printf("[STATE] New state: %d\n", static_cast<int>(state));
     publish_mqtt_status();
     save_state_to_eeprom();
 }
@@ -101,7 +106,7 @@ std::string DoorStateMachine::get_door_status_string() const {
 }
 
 std::string DoorStateMachine::get_error_status_string() const {
-    if (state == DoorState::ERROR) return "Door stuck";
+    if (state == DoorState::ERROR || stuck_detected) return "Door stuck";
     return"Normal";
 }
 
@@ -153,6 +158,19 @@ void DoorStateMachine::publish_mqtt_status() {
 #endif
 }
 
+std::string doorStateToString(DoorState state) {
+    switch (state) {
+    case DoorState::NOT_CALIBRATED: return "NOT_CALIBRATED";
+    case DoorState::CALIBRATING:    return "CALIBRATING";
+    case DoorState::DOOR_CLOSED:    return "DOOR_CLOSED";
+    case DoorState::DOOR_OPENED:    return "DOOR_OPENED";
+    case DoorState::CLOSING:        return "CLOSING";
+    case DoorState::OPENING:        return "OPENING";
+    case DoorState::STOPPED:        return "STOPPED";
+    case DoorState::ERROR:          return "ERROR";
+    default:                        return "UNKNOWN";
+    }
+}
 
 void DoorStateMachine::save_state_to_eeprom() {
     uint8_t buf[3];
@@ -160,8 +178,10 @@ void DoorStateMachine::save_state_to_eeprom() {
     buf[1] = is_calibrated ? 1 : 0;
     buf[2] = static_cast<uint8_t>(last_direction);
 
+    auto calib_str = [](uint8_t i) { return i ? "Calibrated" : "Not Calibrated"; };
+
     eeprom_write_multi(EEPROM_STATE_ADDR, buf, 3);
-    printf("[EEPROM] Saved state: %d, calib: %d, dir: %d\n", buf[0], buf[1], buf[2]);
+    printf("[EEPROM] Saved state: %s, calib: %s, dir: %d\n", doorStateToString(static_cast<DoorState>(buf[0])).c_str(),  calib_str(buf[1]), buf[2]);
 }
 
 void DoorStateMachine::load_state_from_eeprom() {
