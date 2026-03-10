@@ -19,6 +19,8 @@
     static absolute_time_t mqtt_send;
     static MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
 
+    std::string hostname = "192.168.1.104";
+
     void mqtt_init()
     {
         //IPStack ipstack("SSID", "PASSWORD"); // example
@@ -26,13 +28,13 @@
         //IPStack ipstack("SmartIotMQTT", "SmartIot"); // example
         //IPStack ipstack("MP-IOT", "3QDaDHLn10"); // Karamalmi
         //IPSTack ipstack("MP-IOT", "ID2vOcYrWi"); //Myyrmaki
-        ipstack = new IPStack("MP-IOT", "ID2vOcYrWi"); // Karamalmi
-        //ipstack = new IPStack("TP-Link_FFDC", "61172937");
+        //ipstack = new IPStack("MP-IOT", "ID2vOcYrWi"); // Karamalmi
+        ipstack = new IPStack("TP-Link_FFDC", "61172937");
         client  = new MQTT::Client<IPStack, Countdown>(*ipstack);
 
         //int rc = ipstack.connect("192.168.1.10", 1883);
-        int rc = ipstack->connect("10.161.4.56", 1883); //Tram's School IP
-        //int rc = ipstack->connect("192.168.1.104", 1883); //Tram's Home IP
+        //int rc = ipstack->connect("10.161.4.56", 1883); //Tram's School IP
+        int rc = ipstack->connect(hostname.c_str(), 1883); //Tram's Home IP
         printf("[MQTT DEBUG] TCP connect rc = %d\n", rc);
         if (rc != 0) {
             printf("[MQTT ERROR] rc from TCP connect is %d\n", rc);
@@ -92,7 +94,7 @@
                 printf("[MQTT DEBUG] Not connected...\n");
 
                 ipstack->disconnect();
-                int rc = ipstack->connect("192.168.1.104", 1883);
+                int rc = ipstack->connect(hostname.c_str(), 1883);
                 if (rc != ERR_OK) {
                     printf("[MQTT ERROR] TCP reconnect failed: %d\n", rc);
                     return;
@@ -158,7 +160,7 @@
             */
         }
         cyw43_arch_poll(); // obsolete? - see below
-        client->yield(100); // socket that client uses calls cyw43_arch_poll()
+        client->yield(1); // socket that client uses calls cyw43_arch_poll()
         //printf("[MQTT DEBUG] Yield completed\n");
     }
 

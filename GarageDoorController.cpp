@@ -27,6 +27,7 @@ GarageDoorController::GarageDoorController()
 
 void GarageDoorController::run() {
     //printf("[RUN] Enter run loop\n");
+    mqtt_loop();
     check_buttons();
     check_limits_and_encoder();
 
@@ -346,7 +347,7 @@ void GarageDoorController::messageArrived(MQTT::MessageData& md) {
         }
         else {
             instance->state_machine.handle_event(Event::REMOTE_CLOSE);
-            printf("[MQTT DEBUG] Triggered REMOTE_OPEN\n");
+            printf("[MQTT DEBUG] Triggered REMOTE_CLOSE\n");
         }
     }
     else if (cmd == "pause" || cmd == "PAUSE" || cmd == "stop" || cmd == "STOP") {
