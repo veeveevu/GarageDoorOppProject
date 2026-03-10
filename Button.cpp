@@ -24,7 +24,7 @@ bool Button::is_pressed() {
             last_time = now;
 
             if (current_state == true) {
-                printf("[BUTTON] Button pin %d is pressed.\n", button);
+                //printf("[BUTTON] Button pin %d is pressed.\n", button);
                 return true;
             }
         }
@@ -37,4 +37,7 @@ bool Button::is_pressed() {
         }
     }
     return false;
+}
+bool Button::is_held() const {
+    return !gpio_get(button);
 }

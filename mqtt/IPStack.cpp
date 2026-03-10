@@ -115,7 +115,7 @@ err_t IPStack::tcp_client_connected(void *arg, struct tcp_pcb *tpcb, err_t err) 
  */
 err_t IPStack::tcp_client_poll(void *arg, struct tcp_pcb *tpcb) {
     //auto state = static_cast<IPStack *>(arg);
-    DEBUG_printf("tcp_client_poll\n");
+    //DEBUG_printf("tcp_client_poll\n");
     return ERR_OK;
 }
 

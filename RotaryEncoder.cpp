@@ -42,6 +42,6 @@ void RotaryEncoder::flush() {
     while (queue_try_remove(&rotary_events, &trash)){}
 }
 
-bool RotaryEncoder::getEvent(int &direction) {
+bool RotaryEncoder::get_event(int &direction) {
     return queue_try_remove(&rotary_events, &direction);
 }
