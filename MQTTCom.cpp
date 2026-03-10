@@ -35,7 +35,7 @@
         //int rc = ipstack.connect("192.168.1.10", 1883);
         //int rc = ipstack->connect("10.161.4.56", 1883); //Tram's School IP
         int rc = ipstack->connect(hostname.c_str(), 1883); //Tram's Home IP
-        printf("[MQTT DEBUG] TCP connect rc = %d\n", rc);
+        //printf("[MQTT DEBUG] TCP connect rc = %d\n", rc);
         if (rc != 0) {
             printf("[MQTT ERROR] rc from TCP connect is %d\n", rc);
             return;
@@ -113,7 +113,6 @@
                 }
             }
             char buf[100];
-            int rc = 0;
             MQTT::Message message;
             message.retained = false;
             message.dup = false;

@@ -9,17 +9,17 @@ GarageDoorController::GarageDoorController()
     : calibration_machine(motor, limits, encoder) {
     printf("[CTL-CONSTR] Start constructor...\n");
 
-    printf("[CTL-CONSTR] Before mqtt_init()\n");
+    //printf("[CTL-CONSTR] Before mqtt_init()\n");
     mqtt_init();
-    printf("[CTL-CONSTR] After mqtt_init()\n");
+    //printf("[CTL-CONSTR] After mqtt_init()\n");
 
-    printf("[CTL-CONSTR] Before eeprom_log_init()\n");
+    //printf("[CTL-CONSTR] Before eeprom_log_init()\n");
     eeprom_log_init();
-    printf("[CTL-CONSTR] After eeprom_log_init()\n");
+    //printf("[CTL-CONSTR] After eeprom_log_init()\n");
 
-    printf("[CTL-CONSTR] Before load_state()\n");
+    //printf("[CTL-CONSTR] Before load_state()\n");
     load_state();
-    printf("[CTL-CONSTR] After load_state()\n");
+    //printf("[CTL-CONSTR] After load_state()\n");
 
     instance = this;
     printf("[CTL-CONSTR] Constructor done!\n");
@@ -46,8 +46,8 @@ void GarageDoorController::run() {
 
 void GarageDoorController::compute_ratio() {
     if (total_motor_steps > 0) {
-        step_ratio = (float)total_encoder_turns / (float)total_motor_steps;
-        printf("[CTL-RATIO] Encoder ticks per motor step: %.4f\n", step_ratio);
+        step_ratio = static_cast<float>(total_encoder_turns) / static_cast<float>(total_motor_steps);
+        //printf("[CTL-RATIO] Encoder ticks per motor step: %.4f\n", step_ratio);
     }
     else {
         step_ratio = 0.0f;
@@ -65,7 +65,7 @@ void GarageDoorController::check_buttons() {
     bool sw2_held = sw2.is_held();
 
     if ((sw0_pressed && sw2_held) || (sw2_pressed && sw0_held)) {
-        printf("[CTL-BTN] SW0 + SW2 pressed → Calibration!\n");
+        printf("[CTL-BTN] SW0 + SW2 pressed: Calibration!\n");
         state_machine.handle_event(Event::SW0_SW2_PRESSED);
         return;
     }
@@ -111,10 +111,9 @@ void GarageDoorController::check_stuck() {
     // Every RATIO_CHECK_INTERVAL motor steps, evaluate the ratio
     if (motor_steps_since_check >= RATIO_CHECK_INTERVAL) {
         float expected_encoder_turns = RATIO_CHECK_INTERVAL * step_ratio;
-        float actual_encoder_turns = (float)std::abs(current_encoder_pos - last_checked_encoder_pos);
+        float actual_encoder_turns = static_cast<float>(std::abs(current_encoder_pos - last_checked_encoder_pos));
 
-        printf("[CTL-RATIO] Expected: %.1f turns, Got: %.1f turns\n",
-               expected_encoder_turns, actual_encoder_turns);
+        //printf("[CTL-RATIO] Expected: %.1f turns, Got: %.1f turns\n", expected_encoder_turns, actual_encoder_turns);
 
         if (actual_encoder_turns < expected_encoder_turns * SLIP_THRESHOLD && expected_encoder_turns > 1.0f) {
             printf("[CTL-STUCK] Ratio-based: expected %.1f ticks but got %.1f!\n",
@@ -282,6 +281,13 @@ void GarageDoorController::load_state() {
         printf("[CTL-BOOT] WARNING: There was power loss. Need to calibrate again!");
         state_machine.handle_event(Event::STUCK_FOUND);
     }
+
+    printf("[CTL-BOOT] Initial status - Door: %s | Error: %s | Calib: %s\n",
+           state_machine.get_door_status_string().c_str(),
+           state_machine.get_error_status_string().c_str(),
+           state_machine.get_calibration_status_string().c_str());
+
+    state_machine.publish_mqtt_status();
 }
 
 void GarageDoorController::save_state() {
@@ -385,7 +391,7 @@ void GarageDoorController::messageArrived(MQTT::MessageData& md) {
     MQTT::Message resp_msg;
     resp_msg.qos = MQTT::QOS0;
     resp_msg.retained = false;
-    resp_msg.payload = (void*)resp;
+    resp_msg.payload = static_cast<void*>(resp);
     resp_msg.payloadlen = strlen(resp);
 
     int rc = client->publish("garage/door/response", resp_msg); // client vẫn từ MQTTCom
