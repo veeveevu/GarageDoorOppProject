@@ -2,6 +2,8 @@
 #include <cstdio>
 #include <string>
 
+
+
 GarageDoorController* GarageDoorController::instance = nullptr;
 
 GarageDoorController::GarageDoorController()
@@ -28,19 +30,31 @@ void GarageDoorController::run() {
     //printf("[RUN] Enter run loop\n");
     check_buttons();
     check_limits_and_encoder();
+
     if (state_machine.get_current_state() == DoorState::CALIBRATING) {
         perform_calibration();
     } else {
-        check_stuck();
         react_to_state();
+        check_stuck();
+        check_finish_moving();
     }
     update_leds();
     //mqtt_loop();
-    sleep_us(5000);
+    sleep_us(1000);
 }
 
-void GarageDoorController::check_buttons() {
+void GarageDoorController::compute_ratio() {
+    if (total_motor_steps > 0) {
+        step_ratio = (float)total_encoder_turns / (float)total_motor_steps;
+        printf("[RATIO] Encoder ticks per motor step: %.4f\n", step_ratio);
+    } else {
+        step_ratio = 0.0f;
+        printf("[RATIO] Warning: total_motor_steps is 0, ratio not set!\n");
+    }
+}
 
+
+void GarageDoorController::check_buttons() {
     /* debounce in button class
     absolute_time_t now = get_absolute_time();
     if (absolute_time_diff_us(last_debounce, now) < debounce_us) {
@@ -50,22 +64,16 @@ void GarageDoorController::check_buttons() {
     */
     bool sw0_pressed = sw0.is_pressed();
     bool sw1_pressed = sw1.is_pressed();
-    bool sw2_pressed = sw2.is_pressed();
+    //bool sw2_pressed = sw2.is_pressed();
 
-    if (sw0_pressed && sw2_pressed) {
-        printf("[BTN] SW0 + SW2 pressed → Calibration!\n");
-        state_machine.handle_event(Event::SW0_SW2_PRESSED);
-        return;
+    if (sw0_pressed) {
+            printf("[BTN] SW0 + SW2 pressed → Calibration!\n");
+            state_machine.handle_event(Event::SW0_SW2_PRESSED);
+            return;
     }
     if (sw1_pressed) {
         printf("[BTN] SW1 pressed!\n");
         state_machine.handle_event(Event::SW1_PRESSED);
-    }
-    else if (sw0_pressed) {
-        printf("[BTN] SW0 pressed alone\n");
-    }
-    else if (sw2_pressed) {
-        printf("[BTN] SW2 pressed alone\n");
     }
 
     //last_debounce = now;
@@ -80,22 +88,58 @@ void GarageDoorController::check_limits_and_encoder() {
     }
 
     int dir;
-    if (encoder.getEvent(dir)) {
+    int events_this_cycle = 0;
+    while (encoder.getEvent(dir)) {  // Keep reading until queue is empty
         current_pos += dir;
+        encoder_ticks_since_check++;
         last_encoder_change = get_absolute_time();
+        events_this_cycle++;
+    }
+
+    // Debug output
+    if (events_this_cycle > 0) {
+        static int total_events = 0;
+        total_events += events_this_cycle;
+        if (total_events % 100 == 0) {
+            printf("[ENC] Got %d events this cycle, total: %d, pos: %d\n",
+                   events_this_cycle, total_events, current_pos);
+        }
     }
 }
 
 void GarageDoorController::check_stuck() {
     auto st = state_machine.get_current_state();
-    if (st == DoorState::OPENING || st == DoorState::CLOSING) {
-        absolute_time_t now = get_absolute_time();
-        int64_t time_since_movement = absolute_time_diff_us(last_encoder_change, now);
+    if (st != DoorState::OPENING && st != DoorState::CLOSING) {
+        return;
+    }
+    if (step_ratio <= 0.0f || total_motor_steps <= 0) {
+        printf("[STUCK] Ratio not initialized, skipping check\n");
+        return;
+    }
 
-        if (time_since_movement > stuck_timeout_us) {
+    if (motor_steps_since_check < 50) {
+        return;
+    }
+
+    // Every RATIO_CHECK_INTERVAL motor steps, evaluate the ratio
+    if (motor_steps_since_check >= RATIO_CHECK_INTERVAL) {
+        float expected_ticks = RATIO_CHECK_INTERVAL * step_ratio;
+        float actual_ticks   = (float)encoder_ticks_since_check;
+
+        printf("[RATIO] Expected: %.1f ticks, Got: %.1f ticks\n",
+               expected_ticks, actual_ticks);
+
+        if (actual_ticks < expected_ticks * SLIP_THRESHOLD && expected_ticks > 1.0f) {
+            // Got less than 50% of expected encoder ticks → door is slipping or jammed
+            printf("[STUCK] Ratio-based: expected %.1f ticks but got %.1f!\n",
+                   expected_ticks, actual_ticks);
             state_machine.handle_event(Event::STUCK_FOUND);
-            printf("[STUCK] No movement detected for %lld us!\n", time_since_movement);
+            return;
         }
+
+        // Reset for next interval regardless
+        motor_steps_since_check   = 0;
+        encoder_ticks_since_check = 0;
     }
 }
 
@@ -107,6 +151,11 @@ void GarageDoorController::react_to_state() {
     if ((st == DoorState::OPENING || st == DoorState::CLOSING) &&
         (last_state != st)) {
         last_encoder_change = get_absolute_time();
+        motor_steps_since_check   = 0;
+        encoder_ticks_since_check = 0;
+        printf("[REACT] Started movement, reset stuck timer\n");
+        printf("[REACT] Ratio: %.4f, Total motor steps: %d, Total encoder: %d\n",
+               step_ratio, total_motor_steps, total_encoder_turns);
         printf("[REACT] Started movement, reset stuck timer\n");
         }
     last_state = st;
@@ -118,10 +167,22 @@ void GarageDoorController::react_to_state() {
 
     case DoorState::OPENING:
         motor.step(Direction::ToOpen);
+        current_pos++;
+        motor_steps_since_check++;
+        if (motor_steps_since_check % 500 == 0) {
+            printf("[MOTOR] Opening: pos=%d, motor_steps=%d, encoder_ticks=%d\n",
+                   current_pos, motor_steps_since_check, encoder_ticks_since_check);
+        }
         break;
 
     case DoorState::CLOSING:
         motor.step(Direction::ToClose);
+        current_pos--; //???? idk understand it yet
+        motor_steps_since_check++;
+        if (motor_steps_since_check % 500 == 0) {
+            printf("[MOTOR] Closing: pos=%d, motor_steps=%d, encoder_ticks=%d\n",
+                   current_pos, motor_steps_since_check, encoder_ticks_since_check);
+        }
         break;
 
     case DoorState::STOPPED:
@@ -166,6 +227,40 @@ void GarageDoorController::perform_calibration() {
 }
 */
 
+void GarageDoorController::check_finish_moving() {
+    auto st = state_machine.get_current_state();
+
+    // Only relevant when door is actually moving
+    if (st != DoorState::OPENING && st != DoorState::CLOSING) {
+        return;
+    }
+
+    if (st == DoorState::OPENING) {
+        // current_pos counts UP from 0 (closed) toward total_motor_steps (open)
+        // Stop 300 steps before the physical limit switch body
+        if (current_pos >= (total_motor_steps - 300)) {
+            printf("[POS] Opening complete at pos=%d (limit=%d)\n",
+                   current_pos, total_motor_steps - 300);
+            state_machine.handle_event(Event::FINISH_MOVING);
+            // Reset counters for next movement
+            motor_steps_since_check   = 0;
+            encoder_ticks_since_check = 0;
+        }
+    }
+
+    if (st == DoorState::CLOSING) {
+        // current_pos counts DOWN from total_motor_steps toward 0 (closed)
+        // Stop 300 steps before the physical limit switch body
+        if (current_pos <= 300) {
+            printf("[POS] Closing complete at pos=%d\n", current_pos);
+            state_machine.handle_event(Event::FINISH_MOVING);
+            // Reset counters for next movement
+            motor_steps_since_check   = 0;
+            encoder_ticks_since_check = 0;
+        }
+    }
+}
+
 void GarageDoorController::perform_calibration() {
     if (calibration_started) {
         return;
@@ -183,11 +278,11 @@ void GarageDoorController::perform_calibration() {
 
 if (success) {
     printf("[CALIB] Calibration succeeded!\n");
-
     printf("[CALIB] Total motor steps: %d\n", total_motor_steps);
     printf("[CALIB] Total encode turns: %d\n", total_encoder_turns);
     printf("[CALIB] Current state before event: %d\n", static_cast<int>(state_machine.get_current_state()));
 
+    compute_ratio();
     state_machine.handle_event(Event::CALIBRATION_COMPLETE_SUCCESS);
     printf("[CALIB] Current state after event: %d\n", static_cast<int>(state_machine.get_current_state()));
 
@@ -225,10 +320,36 @@ void GarageDoorController::update_leds() {
 
 void GarageDoorController::load_state() {
     state_machine.load_state_from_eeprom();
+    uint8_t buf[8] = {0};
+    if (eeprom_read_multi(EEPROM_STEPS_ADDR, buf, 8)) {
+        int loaded_steps = (buf[0]<<24)|(buf[1]<<16)|(buf[2]<<8)|buf[3];
+        int loaded_turns = (buf[4]<<24)|(buf[5]<<16)|(buf[6]<<8)|buf[7];
+
+        // Only use loaded values if they look reasonable
+        if (loaded_steps > 0 && loaded_steps < 14000) {
+            total_motor_steps = loaded_steps;
+            total_encoder_turns = loaded_turns;
+            compute_ratio();
+            printf("[EEPROM] Loaded motor steps: %d, encoder turns: %d\n", total_motor_steps, total_encoder_turns);
+        } else {
+            printf("[EEPROM] Motor steps invalid, will need recalibration\n");
+        }
+    }
 }
 
 void GarageDoorController::save_state() {
     state_machine.save_state_to_eeprom();
+    uint8_t buf[8];
+    buf[0] = (total_motor_steps >> 24) & 0xFF;
+    buf[1] = (total_motor_steps >> 16) & 0xFF;
+    buf[2] = (total_motor_steps >> 8)  & 0xFF;
+    buf[3] = (total_motor_steps)       & 0xFF;
+    buf[4] = (total_encoder_turns >> 24) & 0xFF;
+    buf[5] = (total_encoder_turns >> 16) & 0xFF;
+    buf[6] = (total_encoder_turns >> 8)  & 0xFF;
+    buf[7] = (total_encoder_turns)       & 0xFF;
+    eeprom_write_multi(EEPROM_STEPS_ADDR, buf, 8);
+    printf("[EEPROM] Saved motor steps: %d, encoder turns: %d\n", total_motor_steps, total_encoder_turns);
 }
 
 void GarageDoorController::messageArrived(MQTT::MessageData& md) {
@@ -332,3 +453,4 @@ void GarageDoorController::messageArrived(MQTT::MessageData& md) {
     instance->state_machine.publish_mqtt_status();
     printf("[MQTT DEBUG] Published status after command\n");
 }
+
