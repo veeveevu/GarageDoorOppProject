@@ -40,7 +40,7 @@ void GarageDoorController::run() {
     }
     update_leds();
     //mqtt_loop();
-    sleep_us(1000);
+    //sleep_us(1000);
 }
 
 void GarageDoorController::compute_ratio() {
@@ -272,6 +272,14 @@ void GarageDoorController::load_state() {
         else {
             printf("[CTL-EEPROM] Motor steps invalid, will need recalibration\n");
         }
+    }
+
+    DoorState st = state_machine.get_current_state();
+
+    if (st != DoorState::DOOR_CLOSED && st != DoorState::DOOR_OPENED && st != DoorState::NOT_CALIBRATED) {
+
+        printf("[CTL-BOOT] WARNING: There was power loss. Need to calibrate again!");
+        state_machine.handle_event(Event::STUCK_FOUND);
     }
 }
 
