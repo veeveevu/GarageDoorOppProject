@@ -5,10 +5,10 @@ Calibration::Calibration(StepperMotor& motor, LimitSwitch& limit_switch, RotaryE
 
 bool Calibration::do_calibration() {
 
-    printf("[CALIB] Calibration started\n");
+    printf("[CALIB] Calibration started...\n");
 
     if (limit_switch.is_Open_Switch_held()) {
-        printf("[CALIB] Start from open\n");
+        printf("[CALIB] Start from OPEN\n");
         int safety = 0;
 
         while (!limit_switch.is_Close_Switch_held()) {
@@ -20,12 +20,12 @@ bool Calibration::do_calibration() {
             }
         }
     } else if (limit_switch.is_Close_Switch_held()) {
-        printf("[CALIB] Start from close\n");
+        printf("[CALIB] Start from CLOSE\n");
         int safety = 0;
         while (limit_switch.is_Close_Switch_held()) {
             motor.step(Direction::ToOpen);
             if (++safety > MAX_STEPS_SAFETY) {
-                printf("[CALIB] STUCK!\n");
+                printf("[CALIB] STUCK found.\n");
                 return false;
             }
         }
@@ -34,17 +34,17 @@ bool Calibration::do_calibration() {
         while (!limit_switch.is_Close_Switch_held()) {
             motor.step(Direction::ToClose);
             if (++safety > MAX_STEPS_SAFETY) {
-                printf("[CALIB] STUCK returning to close!\n");
+                printf("[CALIB] STUCK found.\n");
                 return false;
             }
         }
     } else {
-        printf("[CALIB] Start from mid\n");
+        printf("[CALIB] Start from MID\n");
         int safety = 0;
         while (!limit_switch.is_Close_Switch_held()) {
             motor.step(Direction::ToClose);
             if (++safety > MAX_STEPS_SAFETY) {
-                printf("[CALIB] STUCK driving to close from mid!\n");
+                printf("[CALIB] STUCK found.\n");
                 return false;
             }
         }
@@ -63,11 +63,11 @@ bool Calibration::do_calibration() {
             ++total_motor_counter;
 
             int direction;
-            while (encoder.getEvent(direction)) {
-                ++total_encoder_counter;  // only count when encoder actually ticks
+            while (encoder.get_event(direction)) {
+                ++total_encoder_counter;
             }
             if (++safety > MAX_STEPS_SAFETY) {
-                printf("[CALIB] STUCK during trip 1 (close→open)!\n");
+                printf("[CALIB] STUCK during trip 1!\n");
                 return false;
             }
         }
@@ -81,21 +81,21 @@ bool Calibration::do_calibration() {
             ++total_motor_counter;
 
             int direction;
-            while (encoder.getEvent(direction)) {
-                ++total_encoder_counter;  // only count when encoder actually ticks
+            while (encoder.get_event(direction)) {
+                ++total_encoder_counter;
             }
             if (++safety > MAX_STEPS_SAFETY) {
-                printf("[CALIB] STUCK during trip 2 (open→close)!\n");
+                printf("[CALIB] STUCK during trip 2!\n");
                 return false;
             }
         }
     }
 
-    encoder_counter = (total_encoder_counter * 20) / 2; //20 detents
+    encoder_counter = total_encoder_counter / 2;
     motor_counter = total_motor_counter / 2;
 
-    printf("Encoder steps: %d\n", encoder_counter);
-    printf("Motor steps: %d\n", motor_counter);
+    //printf("Encoder steps: %d\n", encoder_counter);
+    //printf("Motor steps: %d\n", motor_counter);
     return true;
 }
 

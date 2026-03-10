@@ -21,7 +21,6 @@ void DoorStateMachine::handle_event(Event event) {
             save_state_to_eeprom();
             state = DoorState::DOOR_CLOSED;
         } else if (event == Event::STUCK_FOUND) {
-            printf("[STATE] Calibration failed - going to ERROR\n");
             state = DoorState::ERROR;
         }
         break;
@@ -48,7 +47,6 @@ void DoorStateMachine::handle_event(Event event) {
         if (event == Event::STUCK_FOUND) {
             is_calibrated = false;
             state = DoorState::NOT_CALIBRATED;
-            printf("[STATE] Door stuck during opening → NOT_CALIBRATED\n");
         }
         break;
     case DoorState::CLOSING:
@@ -61,7 +59,6 @@ void DoorStateMachine::handle_event(Event event) {
         if (event == Event::STUCK_FOUND) {
             is_calibrated = false;
             state = DoorState::NOT_CALIBRATED;
-            printf("[STATE] Door stuck during closing → NOT_CALIBRATED\n");
 
         }
         break;

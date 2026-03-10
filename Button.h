@@ -12,6 +12,7 @@ class Button {
 public:
     Button(uint button_pin);
     bool is_pressed();
+    bool is_held() const;
 
 private:
     uint button;

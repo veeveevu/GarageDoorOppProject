@@ -15,6 +15,8 @@
 #include "DoorStateMachine.h"
 #include "Calibration.h"
 
+#include <cmath>
+
 constexpr uint MOTOR_IN1 = 2;
 constexpr uint MOTOR_IN2 = 3;
 constexpr uint MOTOR_IN3 = 6;
@@ -58,26 +60,27 @@ private:
     Led led_close{LED_CLOSE_PIN};
     Led led_error{LED_ERROR_PIN};
 
-    //absolute_time_t last_debounce = nil_time;
     absolute_time_t last_encoder_change = nil_time;
     const uint32_t debounce_us = 30000;
     const uint32_t stuck_timeout_us = 800000;
 
     static GarageDoorController* instance;
+    bool calibration_started = false;
 
     int total_motor_steps = 0;
     int total_encoder_turns = 0;
-    int current_pos = 0;
 
-    bool calibration_started = false;
-
+    int current_motor_pos = 0;
+    int current_encoder_pos = 0;
+    int last_checked_encoder_pos = 0;
     int motor_steps_since_check = 0;
-    int encoder_ticks_since_check = 0;
-    float step_ratio = 0.0f;
-    static constexpr int RATIO_CHECK_INTERVAL = 200;
-    static constexpr float SLIP_THRESHOLD = 0.5f;
-    void compute_ratio();
 
+    float step_ratio = 0.0f;
+    static constexpr int RATIO_CHECK_INTERVAL = 1500;
+    static constexpr float SLIP_THRESHOLD = 0.5f;
+    static constexpr int STEPS_BEFORE_TOUCHING = 300;
+
+    void compute_ratio();
     void check_buttons();
     void check_limits_and_encoder();
     void check_stuck();
