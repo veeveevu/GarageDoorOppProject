@@ -91,7 +91,7 @@ bool Calibration::do_calibration() {
         }
     }
 
-    encoder_counter = total_encoder_counter / 2;
+    encoder_counter = (total_encoder_counter * 20) / 2; //20 detents
     motor_counter = total_motor_counter / 2;
 
     printf("Encoder steps: %d\n", encoder_counter);

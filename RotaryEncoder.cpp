@@ -1,5 +1,7 @@
 #include "RotaryEncoder.h"
 
+
+
 RotaryEncoder* RotaryEncoder::instance = nullptr;
 
 RotaryEncoder::RotaryEncoder(uint Rot_A_pin, uint Rot_B_pin)

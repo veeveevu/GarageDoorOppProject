@@ -39,25 +39,30 @@ void DoorStateMachine::handle_event(Event event) {
         break;
     case DoorState::OPENING:
         // don't know what is the equal remote event?
-        if (event == Event::OPEN_SWITCH_TRIGGERED) {
+        if (event == Event::FINISH_MOVING ) {
             state = DoorState::DOOR_OPENED;
         }
         if (event == Event::SW1_PRESSED  || event == Event::REMOTE_PAUSE) {
             state = DoorState::STOPPED;
         }
         if (event == Event::STUCK_FOUND) {
-            state = DoorState::ERROR;
+            is_calibrated = false;
+            state = DoorState::NOT_CALIBRATED;
+            printf("[STATE] Door stuck during opening → NOT_CALIBRATED\n");
         }
         break;
     case DoorState::CLOSING:
-        if (event == Event::CLOSE_SWITCH_TRIGGERED) {
+        if (event == Event::FINISH_MOVING) {
             state = DoorState::DOOR_CLOSED;
         }
         if (event == Event::SW1_PRESSED || event == Event::REMOTE_PAUSE) {
             state = DoorState::STOPPED;
         }
         if (event == Event::STUCK_FOUND) {
-            state = DoorState::ERROR;
+            is_calibrated = false;
+            state = DoorState::NOT_CALIBRATED;
+            printf("[STATE] Door stuck during closing → NOT_CALIBRATED\n");
+
         }
         break;
     case DoorState::STOPPED:
@@ -150,6 +155,7 @@ void DoorStateMachine::publish_mqtt_status() {
            get_calibration_status_string().c_str());
 #endif
 }
+
 
 void DoorStateMachine::save_state_to_eeprom() {
     uint8_t buf[3];

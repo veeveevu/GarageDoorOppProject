@@ -23,14 +23,14 @@ constexpr uint MOTOR_IN4 = 13;
 constexpr uint ENC_A_PIN = 27;
 constexpr uint ENC_B_PIN = 28;
 
-constexpr uint LIMIT_OPEN_PIN  = 14;
+constexpr uint LIMIT_OPEN_PIN = 14;
 constexpr uint LIMIT_CLOSE_PIN = 15;
 
 constexpr uint SW0_PIN = 9;
 constexpr uint SW1_PIN = 8;
 constexpr uint SW2_PIN = 7;
 
-constexpr uint LED_OPEN_PIN  = 20;
+constexpr uint LED_OPEN_PIN = 20;
 constexpr uint LED_CLOSE_PIN = 21;
 constexpr uint LED_ERROR_PIN = 22;
 
@@ -40,6 +40,7 @@ public:
     GarageDoorController();
     void run();
     static void messageArrived(MQTT::MessageData& md);
+
 private:
     DoorStateMachine state_machine;
 
@@ -70,10 +71,18 @@ private:
 
     bool calibration_started = false;
 
+    int motor_steps_since_check = 0;
+    int encoder_ticks_since_check = 0;
+    float step_ratio = 0.0f;
+    static constexpr int RATIO_CHECK_INTERVAL = 200;
+    static constexpr float SLIP_THRESHOLD = 0.5f;
+    void compute_ratio();
+
     void check_buttons();
     void check_limits_and_encoder();
     void check_stuck();
     void react_to_state();
+    void check_finish_moving();
     void perform_calibration();
     void update_leds();
     void load_state();

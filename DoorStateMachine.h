@@ -8,7 +8,9 @@
 extern MQTT::Client<IPStack, Countdown>* client;
 extern bool client_is_connected();
 
-constexpr uint16_t EEPROM_STATE_ADDR = 32764;
+constexpr uint16_t EEPROM_STATE_ADDR = 32752;  // 3 bytes: 32752-32754
+constexpr uint16_t EEPROM_STEPS_ADDR = 32756;  // 8 bytes: 32756-32763
+//32764-32767 = spare gap before chip end
 
 //state for state machine
 enum class DoorState {
@@ -31,6 +33,7 @@ enum class Event {
     REMOTE_CLOSE,
     REMOTE_PAUSE,
     REMOTE_CONTINUE,
+    FINISH_MOVING,
     //them mqtt message event
 };
 

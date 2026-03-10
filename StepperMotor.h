@@ -19,7 +19,7 @@ public:
     void run_steps(int steps, Direction direction);
 
 private:
-    static constexpr int STEP_DELAY_US = 1300;
+    static constexpr int STEP_DELAY_US = 1100;
     uint motor_pins[4];
     static constexpr int step_sequence[8][4]= {
         {1,0,0,0},
