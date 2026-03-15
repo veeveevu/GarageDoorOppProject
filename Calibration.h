@@ -18,7 +18,7 @@ private:
     RotaryEncoder &encoder;
     int encoder_counter{0};
     int motor_counter{0};
-    static constexpr int MAX_STEPS_SAFETY = 13700;
+    static constexpr int MAX_STEPS_SAFETY = 20000;
 };
 
 #endif //GARAGE_DOOR_CALIBRATION_H

@@ -3,12 +3,11 @@
 DoorStateMachine::DoorStateMachine()
     : state(DoorState::NOT_CALIBRATED), is_calibrated(false)
 {
-    //load_state_from_eeprom();
 }
 
 void DoorStateMachine::handle_event(Event event) {
     //printf("[STATE] Received event: %d, current state: %d\n", static_cast<int>(event), static_cast<int>(state));
-
+    DoorState old_state = state;
     switch (state) {
     case DoorState::NOT_CALIBRATED:
         if (event == Event::SW0_SW2_PRESSED || event == Event::REMOTE_CALIBRATE) {
@@ -38,7 +37,6 @@ void DoorStateMachine::handle_event(Event event) {
         }
         break;
     case DoorState::OPENING:
-        // don't know what is the equal remote event?
         if (event == Event::FINISH_MOVING ) {
             state = DoorState::DOOR_OPENED;
         }
@@ -87,7 +85,9 @@ void DoorStateMachine::handle_event(Event event) {
     }
     //printf("[STATE] New state: %d\n", static_cast<int>(state));
     publish_mqtt_status();
-    save_state_to_eeprom();
+    if (state != old_state) {       // chỉ save khi state thay đổi
+        save_state_to_eeprom();
+    }
 }
 
 DoorState DoorStateMachine::get_current_state() {
@@ -98,7 +98,7 @@ bool DoorStateMachine::get_is_calibrated() const {
     return is_calibrated;
 }
 
-// Helper để map state cho report
+//helper để map state cho report
 std::string DoorStateMachine::get_door_status_string() const {
     if (state == DoorState::DOOR_OPENED) return "Open";
     if (state == DoorState::DOOR_CLOSED) return "Closed";

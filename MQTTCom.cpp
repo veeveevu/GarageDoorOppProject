@@ -19,7 +19,7 @@
     static absolute_time_t mqtt_send;
     static MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
 
-    std::string hostname = "192.168.1.104";
+    std::string hostname = "10.161.6.57";
 
     void mqtt_init()
     {
@@ -28,8 +28,8 @@
         //IPStack ipstack("SmartIotMQTT", "SmartIot"); // example
         //IPStack ipstack("MP-IOT", "3QDaDHLn10"); // Karamalmi
         //IPSTack ipstack("MP-IOT", "ID2vOcYrWi"); //Myyrmaki
-        //ipstack = new IPStack("MP-IOT", "ID2vOcYrWi"); // Karamalmi
-        ipstack = new IPStack("TP-Link_FFDC", "61172937");
+        ipstack = new IPStack("MP-IOT", "ID2vOcYrWi"); // school
+        //ipstack = new IPStack("TP-Link_FFDC", "61172937");
         client  = new MQTT::Client<IPStack, Countdown>(*ipstack);
 
         //int rc = ipstack.connect("192.168.1.10", 1883);
@@ -43,7 +43,7 @@
 
         printf("[MQTT DEBUG] Waiting for TCP connection...\n");
         bool tcp_ok = false;
-        auto timeout = make_timeout_time_ms(10000);
+        auto timeout = make_timeout_time_ms(15000);
         while (!time_reached(timeout)) {
             cyw43_arch_poll();
             sleep_ms(10);

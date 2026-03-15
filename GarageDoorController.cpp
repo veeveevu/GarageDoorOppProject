@@ -35,6 +35,7 @@ void GarageDoorController::run() {
         perform_calibration();
     }
     else {
+
         react_to_state();
         check_stuck();
         check_finish_moving();
@@ -138,6 +139,10 @@ void GarageDoorController::react_to_state() {
 
         printf("[CTL-REACT] Ratio: %.4f, Total motor steps: %d, Total encoder: %d\n",
                step_ratio, total_motor_steps, total_encoder_turns);
+    }
+
+    if (st==DoorState::STOPPED && last_state !=DoorState::STOPPED) {
+        save_state();
     }
     last_state = st;
 
@@ -257,10 +262,11 @@ void GarageDoorController::update_leds() {
 
 void GarageDoorController::load_state() {
     state_machine.load_state_from_eeprom();
-    uint8_t buf[8] = {0};
-    if (eeprom_read_multi(EEPROM_STEPS_ADDR, buf, 8)) {
+    uint8_t buf[12] = {0};
+    if (eeprom_read_multi(EEPROM_STEPS_ADDR, buf, 12)) {
         int loaded_steps = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
         int loaded_turns = (buf[4] << 24) | (buf[5] << 16) | (buf[6] << 8) | buf[7];
+        int loaded_pos = (buf[8] << 24) | (buf[9] << 16) | (buf[10] << 8) | buf[11];
 
         // Only use loaded values if they look reasonable
         if (loaded_steps > 0 && loaded_steps < 14000) {
@@ -272,15 +278,32 @@ void GarageDoorController::load_state() {
         else {
             printf("[CTL-EEPROM] Motor steps invalid, will need recalibration\n");
         }
+
+        DoorState st = state_machine.get_current_state();
+
+        if (st != DoorState::DOOR_CLOSED && st != DoorState::DOOR_OPENED && st != DoorState::NOT_CALIBRATED && st != DoorState::STOPPED) {
+
+            printf("[CTL-BOOT] WARNING: There was power loss. Need to calibrate again!");
+            state_machine.handle_event(Event::STUCK_FOUND);
+        }
+
+        st = state_machine.get_current_state(); // lấy lại vì có thể vừa thay đổi
+        if (st == DoorState::DOOR_OPENED) {
+            current_motor_pos = total_motor_steps;  // Cửa đang mở = vị trí đầu cuối
+            printf("[CTL-BOOT] Restored motor pos = %d (DOOR_OPENED)\n", current_motor_pos);
+        }
+        else if (st == DoorState::STOPPED)
+        {
+            current_motor_pos = loaded_pos;
+            printf("[CTL-BOOT] Restored motor when STOPPED)\n");
+        } else
+        {
+            current_motor_pos = 0;                  // Cửa đang đóng = vị trí 0
+            printf("[CTL-BOOT] Restored motor pos = 0 (DOOR_CLOSED/other)\n");
+        }
     }
 
-    DoorState st = state_machine.get_current_state();
 
-    if (st != DoorState::DOOR_CLOSED && st != DoorState::DOOR_OPENED && st != DoorState::NOT_CALIBRATED) {
-
-        printf("[CTL-BOOT] WARNING: There was power loss. Need to calibrate again!");
-        state_machine.handle_event(Event::STUCK_FOUND);
-    }
 
     printf("[CTL-BOOT] Initial status - Door: %s | Error: %s | Calib: %s\n",
            state_machine.get_door_status_string().c_str(),
@@ -292,7 +315,7 @@ void GarageDoorController::load_state() {
 
 void GarageDoorController::save_state() {
     state_machine.save_state_to_eeprom();
-    uint8_t buf[8];
+    uint8_t buf[12];
     buf[0] = (total_motor_steps >> 24) & 0xFF;
     buf[1] = (total_motor_steps >> 16) & 0xFF;
     buf[2] = (total_motor_steps >> 8) & 0xFF;
@@ -301,7 +324,12 @@ void GarageDoorController::save_state() {
     buf[5] = (total_encoder_turns >> 16) & 0xFF;
     buf[6] = (total_encoder_turns >> 8) & 0xFF;
     buf[7] = (total_encoder_turns) & 0xFF;
-    eeprom_write_multi(EEPROM_STEPS_ADDR, buf, 8);
+    buf[8] = (current_motor_pos >> 24) & 0xFF;
+    buf[9] = (current_motor_pos >> 16) & 0xFF;
+    buf[10] = (current_motor_pos >> 8) & 0xFF;
+    buf[11] = (current_motor_pos) & 0xFF;
+
+    eeprom_write_multi(EEPROM_STEPS_ADDR, buf, 12);
     printf("[CTL-EEPROM] Saved motor steps: %d, encoder turns: %d\n", total_motor_steps, total_encoder_turns);
 }
 

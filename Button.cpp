@@ -29,7 +29,6 @@ bool Button::is_pressed() {
             }
         }
 
-    //if NO then in cooling down period -> if it stills bouncing reset the timer
     } else {
         if (current_state != last_state) {
             last_time = now;

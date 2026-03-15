@@ -4,9 +4,6 @@
 #include <cstdio>
 #include "pico/stdlib.h"
 
-//Open_Switch = 14
-//Close_Switch = 15;
-
 class LimitSwitch {
 public:
     LimitSwitch(uint open_switch_pin, uint close_switch_pin);

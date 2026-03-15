@@ -3,8 +3,6 @@
 #include "pico/stdlib.h"
 #include "cstdio"
 
-//{2, 3, 6, 13} // ~ IN1, IN2, IN3, IN4
-
 enum class Direction {
     ToOpen, //close -> open
     ToClose, //open -> close

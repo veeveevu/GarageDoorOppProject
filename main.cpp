@@ -22,8 +22,7 @@
 #include "Calibration.h"
 #include "Led.h"
 
-// We are using pins 0 and 1, but see the GPIO function select table in the
-// datasheet for information on which other pins can be used.
+
 #if 0
 #define UART_NR 0
 #define UART_TX_PIN 0
@@ -39,14 +38,11 @@
 //#define STOP_BITS 2 // for real system
 
 int main() {
-    // Initialize chosen serial port
+
     stdio_init_all();
     sleep_ms(1000);
 
     printf("\nBoot\n");
-
-    //StepperMotor m(2, 3, 6, 13);
-    //m.run_steps(5000, Direction::ToOpen);
 
     GarageDoorController controller;
 
@@ -54,27 +50,6 @@ int main() {
     {
         controller.run();
     }
-    /*
-    Button sw0{SW0_PIN};
-    while (true) {
-        sw0.is_pressed();
-    }
-    */
-    //Led led1(20);
-
-
-
-    //LimitSwitch lm(14, 15);
-
-    //RotaryEncoder re(27, 28);
-
-    //Calibration clb(m, lm, re);
-
-
-
-    //clb.do_calibration();
-
-
 
     return 0;
 }
